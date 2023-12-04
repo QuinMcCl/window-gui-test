@@ -1,6 +1,9 @@
 #ifndef GLFW_ENABLED_H
 #define GLFW_ENABLED_H
+#include <algorithm>
 #include <vector>
+#include <GL/glew.h>
+#include <GL/glut.h>
 #include <GLFW/glfw3.h>
 
 
@@ -11,120 +14,128 @@ private:
 
 public:
     glfw_enabled(){
-
+        
     }
     ~glfw_enabled(){
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
-            delete (*c);
-        children.clear();
-    }
-    void adopt(glfw_enabled * child){
-        children.push_back(child);
+        this->children.clear();
     }
 
-    void update(float dt){
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+    virtual void adopt(glfw_enabled * child){
+        this->children.push_back(child);
+    }
+
+    virtual glfw_enabled * orphan(glfw_enabled * child){
+        std::vector<glfw_enabled *>::iterator it = std::find(this->children.begin(), this->children.end(), child);
+        if (it != this->children.end()){
+            children.erase(it);
+            return child;
+        }
+        return NULL;
+    }
+
+    virtual void update(float dt){
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->update(dt);
     }
 
-    void draw(){
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+    virtual void draw(){
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->draw();
     }
 
-    void charfun(unsigned int codepoint)
+    virtual void charfun(unsigned int codepoint)
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->charfun(codepoint);
     }
-    void charmodsfun(unsigned int codepoint, int mods)
+    virtual void charmodsfun(unsigned int codepoint, int mods)
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->charmodsfun(codepoint, mods);
     }
-    void cursorenterfun(int entered)
+    virtual void cursorenterfun(int entered)
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->cursorenterfun(entered);
     }
-    void cursorposfun(double xpos, double ypos) 
+    virtual void cursorposfun(double xpos, double ypos) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->cursorposfun(xpos, ypos);
     }
-    void dropfun(int path_count, const char **paths) 
+    virtual void dropfun(int path_count, const char **paths) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->dropfun(path_count, paths);
     }
-    void framebuffersizefun(int width, int height) 
+    virtual void framebuffersizefun(int width, int height) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->framebuffersizefun(width, height);
     }
-    void joystickfun(int jid, int event) 
+    virtual void joystickfun(int jid, int event) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->joystickfun(jid, event);
     }
-    void keyfun(int key, int scancode, int action, int mods) 
+    virtual void keyfun(int key, int scancode, int action, int mods) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->keyfun(key, scancode, action, mods);
     }
-    void monitorfun(GLFWmonitor *monitor, int event) 
+    virtual void monitorfun(GLFWmonitor *monitor, int event) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->monitorfun(monitor,event);
     }
-    void mousebuttonfun(int button, int action, int mods) 
+    virtual void mousebuttonfun(int button, int action, int mods) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->mousebuttonfun(button, action, mods);
     }
-    void scrollfun(double xoffset, double yoffset) 
+    virtual void scrollfun(double xoffset, double yoffset) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->scrollfun(xoffset, yoffset);
     }
-    void closefun() 
+    virtual void closefun() 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->closefun();
     }
-    void contentscalefun(float xscale, float yscale) 
+    virtual void contentscalefun(float xscale, float yscale) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->contentscalefun(xscale, yscale);
     }
-    void focusfun(int focused) 
+    virtual void focusfun(int focused) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->focusfun(focused);
     }
-    void iconifyfun(int iconified) 
+    virtual void iconifyfun(int iconified) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->iconifyfun(iconified);
     }
-    void maximizefun(int maximized) 
+    virtual void maximizefun(int maximized) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->maximizefun(maximized);
     }
-    void posfun(int xpos, int ypos) 
+    virtual void posfun(int xpos, int ypos) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->posfun(xpos, ypos);
     }
-    void refreshfun() 
+    virtual void refreshfun() 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->refreshfun();
     }
-    void sizefun(int width, int height) 
+    virtual void sizefun(int width, int height) 
     {
-        for (std::vector<glfw_enabled *>::iterator c = children.begin(); c != children.end(); ++c)
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
             (*c)->sizefun(width, height);
     }
 };
