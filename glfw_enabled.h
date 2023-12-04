@@ -1,6 +1,8 @@
 #ifndef GLFW_ENABLED_H
 #define GLFW_ENABLED_H
-#include "types.h"
+#include <vector>
+#include <GLFW/glfw3.h>
+
 
 class glfw_enabled
 {

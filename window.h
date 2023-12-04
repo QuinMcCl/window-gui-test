@@ -1,7 +1,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
-#include "types.h"
 #include "glfw_enabled.h"
+#include <GLFW/glfw3.h>
 
 
 class Window : public glfw_enabled

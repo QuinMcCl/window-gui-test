@@ -1,4 +1,5 @@
 #include "window.h"
+#include <stdio.h>
 
 void window_charfun(GLFWwindow *window, unsigned int codepoint)
 {

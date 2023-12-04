@@ -1,4 +1,7 @@
 #include "shader.h"
+#include <stdio.h>
+#include <GL/glew.h>
+#include <GL/glut.h>
 
 char *read_buff(const char *FilePath, long *length)
 {
@@ -43,6 +46,7 @@ Shader::Shader(const char *vP, const char *fP)
 
 Shader::~Shader()
 {
+    glDeleteProgram(shaderProgram);
 }
 
 int Shader::read_and_compile()

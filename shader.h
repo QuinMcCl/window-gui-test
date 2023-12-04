@@ -1,6 +1,20 @@
 #ifndef SHADER_H
 #define SHADER_H
-#include "types.h"
+#include <glm/glm.hpp>
+
+struct Vertex
+{
+    glm::vec3 Position;
+    glm::vec2 TexCoord;
+};
+
+struct Texture
+{
+    unsigned int id = 0;
+    unsigned int type = 0;
+    const char *path = NULL;
+};
+
 
 
 class Shader

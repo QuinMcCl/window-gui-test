@@ -1,7 +1,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#include <GL/glew.h>
+#include <GL/glut.h>
 
-#include "types.h"
 #include "window.h"
 #include "shader.h"
 
@@ -46,10 +47,6 @@ int main()
         return -1;
     }
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-
     if (sprite_shader.read_and_compile() != GL_TRUE)
     {
         return -1;
@@ -66,13 +63,6 @@ int main()
         lastTime = glfwGetTime();
 
         main_window.update(deltaTime);
-
-        glDepthFunc(GL_LESS);
-
-        // don't forget to enable shader before setting uniforms
-        sprite_shader.use();
-        glm::mat4 projection = glm::ortho(0.0f, 800.0f, 600.0f, 0.0f, -1.0f, 1.0f);
-        sprite_shader.setMat4("projection", projection);
 
         main_window.draw();
     }
