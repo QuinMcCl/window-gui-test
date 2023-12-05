@@ -3,9 +3,9 @@
 #include "types.h"
 
 std::vector<Vertex> triangle_vertices = {
-    Vertex{{-1.0f, -1.0f, -1.0f}, {0.0f, 0.0f}},
-    Vertex{{1.0f, -1.0f, -1.0f}, {1.0f, 0.0f}},
-    Vertex{{1.0f, 1.0f, -1.0f}, {0.0f, 1.0f}},
+    Vertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+    Vertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+    Vertex{{1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
 };
 std::vector<unsigned int> triangle_indeces = {
     0,
@@ -14,18 +14,18 @@ std::vector<unsigned int> triangle_indeces = {
 };
 
 std::vector<Vertex> square_vertices = {
-    Vertex{{-1.0f, -1.0f, -1.0f}, {0.0f, 0.0f}},
-    Vertex{{1.0f, -1.0f, -1.0f}, {1.0f, 0.0f}},
-    Vertex{{1.0f, 1.0f, -1.0f}, {1.0f, 1.0f}},
-    Vertex{{-1.0f, 1.0f, -1.0f}, {0.0f, 1.0f}},
+    Vertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+    Vertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+    Vertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+    Vertex{{-1.0f, 1.0f, .0f}, {0.0f, 1.0f}},
 };
 std::vector<unsigned int> square_indeces = {
     0,
-    1,
-    2,
-    2,
     3,
+    2,
+    2,
     1,
+    0,
 };
 
 std::vector<Vertex> cube_vertices = {
@@ -46,23 +46,47 @@ std::vector<Vertex> cube_vertices = {
 
 };
 std::vector<unsigned int> cube_indeces = {
-    0, 3, 2,
-    2, 1, 0,
-    4, 7, 6,
-    6, 5, 4,
-    0, 5, 6,
-    6, 3, 0,
-    4, 1, 2,
-    2, 7, 4,
-    0, 1, 8,
-    8, 9, 0,
-    10, 3, 6,
-    6, 11, 10,
+    0,
+    3,
+    2,
+    2,
+    1,
+    0,
+    4,
+    7,
+    6,
+    6,
+    5,
+    4,
+    0,
+    5,
+    6,
+    6,
+    3,
+    0,
+    4,
+    1,
+    2,
+    2,
+    7,
+    4,
+    0,
+    1,
+    8,
+    8,
+    9,
+    0,
+    10,
+    3,
+    6,
+    6,
+    11,
+    10,
 };
 
 Primitive::Primitive(primitive_type type)
 {
-    
+
     switch (type)
     {
     case TRIANGLE:
@@ -102,17 +126,18 @@ Primitive::Primitive(primitive_type type)
     glEnableVertexAttribArray(1);
 }
 
-Primitive::~Primitive(){
+Primitive::~Primitive()
+{
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
-
 }
 
-void Primitive::draw(Shader shader){
+void Primitive::draw()
+{
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, mIndeces.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

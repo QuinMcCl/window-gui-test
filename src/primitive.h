@@ -18,7 +18,7 @@ class Primitive
 public:
     Primitive(primitive_type type);
     ~Primitive();
-    void draw(Shader shader);
+    void draw();
 private:
     std::vector<Vertex> mVertices;
     std::vector<unsigned int> mIndeces;

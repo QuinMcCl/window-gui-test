@@ -16,14 +16,14 @@
 
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_HEIGHT = 800;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -32,7 +32,7 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // timing
-float deltaTime = 0.0f;	// time between current frame and last frame
+float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
 int main()
@@ -50,7 +50,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -63,7 +63,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glew: load all OpenGL function pointers
     // ---------------------------------------
@@ -85,21 +85,21 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader ourShader("../shaders/camera.vs", "../shaders/camera.fs");
+    Shader cameraShader("../shaders/camera.vs", "../shaders/camera.fs");
+    Shader flatShader("../shaders/flat.vs", "../shaders/flat.fs");
 
     // world space positions of our cubes
     glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f),
-        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(2.0f, 5.0f, -15.0f),
         glm::vec3(-1.5f, -2.2f, -2.5f),
         glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3( 2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f,  3.0f, -7.5f),
-        glm::vec3( 1.3f, -2.0f, -2.5f),
-        glm::vec3( 1.5f,  2.0f, -2.5f),
-        glm::vec3( 1.5f,  0.2f, -1.5f),
-        glm::vec3(-1.3f,  1.0f, -1.5f)
-    };
+        glm::vec3(2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f, 3.0f, -7.5f),
+        glm::vec3(1.3f, -2.0f, -2.5f),
+        glm::vec3(1.5f, 2.0f, -2.5f),
+        glm::vec3(1.5f, 0.2f, -1.5f),
+        glm::vec3(-1.3f, 1.0f, -1.5f)};
 
     std::vector<glm::mat4> Models;
 
@@ -114,21 +114,38 @@ int main()
         Models.push_back(model);
     }
 
+
+    flatShader.use();
+    glm::mat4 flat_model = glm::mat4(1.0f);
+    // flat_model = glm::translate(flat_model, glm::vec3(-0.5f, 0.25f, 0.0f));
+    // flat_model = glm::rotate(flat_model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    // flat_model = glm::scale(flat_model, glm::vec3(0.25f, 0.25f, 1.0f));
+    flatShader.setMat4("model", flat_model);
+
+    flatShader.setMat4("view", glm::mat4(1.0f));
+    // pass projection matrix to shader (note that in this case it could change every frame)
+    glm::mat4 sprite_projection = glm::mat4(1.0f);
+    flatShader.setMat4("projection", sprite_projection);
+
+
     Primitive cubes(CUBE);
+    Primitive square(SQUARE);
 
     TextureManager theTextureManager;
 
-
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+    stbi_set_flip_vertically_on_load(true);
     Texture container = theTextureManager.getTexture("../resources/container.jpg", 1);
     Texture awesomeface = theTextureManager.getTexture("../resources/awesomeface.png", 1);
+    Texture wall = theTextureManager.getTexture("../resources/wall.jpg", 1);
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
-    ourShader.use();
-    ourShader.setInt("texture1", 0);
-    ourShader.setInt("texture2", 1);
+    cameraShader.use();
+    cameraShader.setInt("texture1", 0);
+    cameraShader.setInt("texture2", 1);
 
+    flatShader.use();
+    flatShader.setInt("texture1", 0);
 
     // render loop
     // -----------
@@ -147,7 +164,11 @@ int main()
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+        // activate shader
+        cameraShader.use();
 
         // bind textures on corresponding texture units
         glActiveTexture(GL_TEXTURE0);
@@ -155,22 +176,36 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, awesomeface.id);
 
-        // activate shader
-        ourShader.use();
-
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        ourShader.setMat4("projection", projection);
+        cameraShader.setMat4("projection", projection);
 
         // camera/view transformation
         glm::mat4 view = camera.GetViewMatrix();
-        ourShader.setMat4("view", view);
+        cameraShader.setMat4("view", view);
 
         // render boxes
-        for(std::vector<glm::mat4>::iterator it = Models.begin(); it != Models.end(); it++){
-            ourShader.setMat4("model", (*it));
-            cubes.draw(ourShader);
+        for (std::vector<glm::mat4>::iterator it = Models.begin(); it != Models.end(); it++)
+        {
+            cameraShader.setMat4("model", (*it));
+            cubes.draw();
         }
+
+
+
+        flatShader.use();
+        glm::mat4 flat_model = glm::mat4(1.0f);
+        // flat_model = glm::translate(flat_model, glm::vec3(-0.125f, 0.0125f, 0.0f));
+        flat_model = glm::rotate(flat_model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        flat_model = glm::scale(flat_model, glm::vec3(0.25f, 0.25f, 1.0f));
+        flatShader.setMat4("model", flat_model);
+        flatShader.setMat4("view", glm::mat4(1.0f));
+        glm::mat4 sprite_projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f); 
+        flatShader.setMat4("projection", sprite_projection);
+        
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, wall.id);
+        square.draw();
 
 
         glfwSwapBuffers(window);
@@ -202,17 +237,16 @@ void processInput(GLFWwindow *window)
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
+    // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
-
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+void mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
 {
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
@@ -235,8 +269,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
-
