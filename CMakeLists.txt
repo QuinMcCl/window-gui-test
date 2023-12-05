@@ -12,7 +12,7 @@ find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 
 
-file(GLOB WINDOW_GUI_TEST_SRC CONFIGURE_DEPENDS "*.h" "*.cpp")
+file(GLOB WINDOW_GUI_TEST_SRC CONFIGURE_DEPENDS "./src/*.h" "./src/*.cpp")
 
 add_executable(WINDOW_GUI_TEST ${WINDOW_GUI_TEST_SRC})
 target_link_libraries(WINDOW_GUI_TEST
