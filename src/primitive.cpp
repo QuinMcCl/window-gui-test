@@ -1,5 +1,6 @@
 #include "primitive.h"
-
+#include "texture.h"
+#include "shader.h"
 #include "types.h"
 
 std::vector<Vertex> triangle_vertices = {
@@ -84,9 +85,10 @@ std::vector<unsigned int> cube_indeces = {
     10,
 };
 
-Primitive::Primitive(primitive_type type)
+Primitive::Primitive(primitive_type type, const Shader *shader, const Texture *image)
 {
-
+    mShader = shader;
+    mImage = image;
     switch (type)
     {
     case TRIANGLE:
@@ -136,8 +138,26 @@ Primitive::~Primitive()
     glDeleteBuffers(1, &EBO);
 }
 
+void Primitive::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
+{
+    mModel = model;
+    mView = view;
+    mProjection = projection;
+}
+
 void Primitive::draw()
 {
+    // activate shader
+    mShader->use();
+    mShader->setInt("texture1", 0);
+    mShader->setMat4("projection", mProjection);
+    mShader->setMat4("view", mView);
+    mShader->setMat4("model", mModel);
+
+    // bind textures on corresponding texture units
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, mImage->id);
+
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, mIndeces.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

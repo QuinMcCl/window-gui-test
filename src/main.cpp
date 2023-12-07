@@ -13,6 +13,7 @@
 #include "camera.h"
 #include "texture.h"
 #include "primitive.h"
+#include "window.h"
 
 #include <iostream>
 
@@ -37,45 +38,13 @@ float lastFrame = 0.0f;
 
 int main()
 {
-    // glfw: initialize and configure
-    // ------------------------------
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+    Window testWindow(10, 10, "you dont see me");
+    testWindow.~Window();
 
-    // glfw window creation
-    // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-
+    Window MainWindow(SCR_WIDTH, SCR_HEIGHT, "Some Window");
     // tell GLFW to capture our mouse
     // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    // glew: load all OpenGL function pointers
-    // ---------------------------------------
-    // If using GLEW version 1.13 or earlier
-    glewExperimental = GL_TRUE;
-    GLenum glew_err = glewInit();
-    if (GLEW_OK != glew_err)
-    {
-        /* Problem: glewInit failed, something is seriously wrong. */
-        fprintf(stderr, "Error: %s\n", glewGetErrorString(glew_err));
-        return -1;
-    }
 
     // configure global opengl state
     // -----------------------------
@@ -103,113 +72,72 @@ int main()
 
     std::vector<glm::mat4> Models;
 
-    for (unsigned int i = 0; i < 10; i++)
-    {
-        // calculate the model matrix for each object and pass it to shader before drawing
-        glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        model = glm::translate(model, cubePositions[i]);
-        float angle = 20.0f * i;
-        model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-        Models.push_back(model);
-    }
-
-
-    flatShader.use();
-    glm::mat4 flat_model = glm::mat4(1.0f);
-    // flat_model = glm::translate(flat_model, glm::vec3(-0.5f, 0.25f, 0.0f));
-    // flat_model = glm::rotate(flat_model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    // flat_model = glm::scale(flat_model, glm::vec3(0.25f, 0.25f, 1.0f));
-    flatShader.setMat4("model", flat_model);
-
-    flatShader.setMat4("view", glm::mat4(1.0f));
-    // pass projection matrix to shader (note that in this case it could change every frame)
-    glm::mat4 sprite_projection = glm::mat4(1.0f);
-    flatShader.setMat4("projection", sprite_projection);
-
-
-    Primitive cubes(CUBE);
-    Primitive square(SQUARE);
-
     TextureManager theTextureManager;
 
     stbi_set_flip_vertically_on_load(true);
     Texture container = theTextureManager.getTexture("../resources/container.jpg", 1);
-    Texture awesomeface = theTextureManager.getTexture("../resources/awesomeface.png", 1);
     Texture wall = theTextureManager.getTexture("../resources/wall.jpg", 1);
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
     cameraShader.use();
     cameraShader.setInt("texture1", 0);
-    cameraShader.setInt("texture2", 1);
 
     flatShader.use();
     flatShader.setInt("texture1", 0);
 
+    Primitive * Cubes[10];
+
+    for (int i = 0; i < 10; i++){
+        Cubes[i] = new Primitive(CUBE, &cameraShader, &container);
+        MainWindow.adopt(Cubes[i]);
+
+    }
+
+    Primitive Square(SQUARE, &flatShader, &wall);
+
+    MainWindow.adopt(&Square);
+
     // render loop
     // -----------
-    while (!glfwWindowShouldClose(window))
+    while (!MainWindow.shouldClose())
+    // while (!glfwWindowShouldClose(window))
     {
+        processInput(MainWindow.mWindow);
         // per-frame time logic
         // --------------------
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // input
-        // -----
-        processInput(window);
-
-        // render
-        // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-        // activate shader
-        cameraShader.use();
-
-        // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, container.id);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, awesomeface.id);
+        MainWindow.update(deltaTime);
 
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        cameraShader.setMat4("projection", projection);
 
         // camera/view transformation
         glm::mat4 view = camera.GetViewMatrix();
-        cameraShader.setMat4("view", view);
+        glm::mat4 model = glm::mat4(1.0f);
 
-        // render boxes
-        for (std::vector<glm::mat4>::iterator it = Models.begin(); it != Models.end(); it++)
+        for (unsigned int i = 0; i < 10; i++)
         {
-            cameraShader.setMat4("model", (*it));
-            cubes.draw();
+            float angle = 20.0f * i * currentFrame;
+            model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+            model = glm::translate(model, cubePositions[i]);
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+            Cubes[i]->updateMatricies(model, view, projection);
         }
 
+        model = glm::mat4(1.0f);
+        // model = glm::translate(model, glm::vec3(-0.125f, 0.0125f, 0.0f));
+        model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::scale(model, glm::vec3(0.25f, 0.25f, 1.0f));
+        view = glm::mat4(1.0f);
+        projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
+        Square.updateMatricies(model, view, projection);
 
-
-        flatShader.use();
-        glm::mat4 flat_model = glm::mat4(1.0f);
-        // flat_model = glm::translate(flat_model, glm::vec3(-0.125f, 0.0125f, 0.0f));
-        flat_model = glm::rotate(flat_model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        flat_model = glm::scale(flat_model, glm::vec3(0.25f, 0.25f, 1.0f));
-        flatShader.setMat4("model", flat_model);
-        flatShader.setMat4("view", glm::mat4(1.0f));
-        glm::mat4 sprite_projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f); 
-        flatShader.setMat4("projection", sprite_projection);
-        
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, wall.id);
-        square.draw();
-
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        MainWindow.draw();
     }
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
