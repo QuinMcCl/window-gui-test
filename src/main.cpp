@@ -73,12 +73,22 @@ int main()
     Texture container = theTextureManager.getTexture("../resources/container.jpg", 1);
     Texture wall = theTextureManager.getTexture("../resources/wall.jpg", 1);
 
-    Primitive *Cubes[10];
+    Primitive Cubes[] = {
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+        {CUBE, &cameraShader, &container},
+    };
 
     for (int i = 0; i < 10; i++)
     {
-        Cubes[i] = new Primitive(CUBE, &cameraShader, &container);
-        MainWindow.adopt(Cubes[i]);
+        MainWindow.adopt(&Cubes[i]);
     }
 
     Primitive Square(SQUARE, &flatShader, &wall);
@@ -101,7 +111,7 @@ int main()
         MainWindow.update(deltaTime);
 
         // pass projection matrix to shader (note that in this case it could change every frame)
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)MainWindow.getWidth() / (float)MainWindow.getHeight(), 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
 
@@ -112,15 +122,16 @@ int main()
             model = glm::translate(model, cubePositions[i]);
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-            Cubes[i]->updateMatricies(model, view, projection);
+            Cubes[i].updateMatricies(model, view, projection);
         }
 
+
+        projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
+        view = glm::mat4(1.0f);
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(-0.125f, 0.0125f, 0.0f));
         model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         model = glm::scale(model, glm::vec3(0.25f, 0.25f, 1.0f));
-        view = glm::mat4(1.0f);
-        projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
         Square.updateMatricies(model, view, projection);
 
         MainWindow.draw();

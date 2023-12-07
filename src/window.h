@@ -10,6 +10,11 @@ public:
     ~Window();
 
     bool shouldClose();
+
+    int getWidth();
+    int getHeight();
+
+    void framebuffersizefun(int width, int height) override;
     void keyfun(int key, int scancode, int action, int mods) override;
 
     void draw() override;

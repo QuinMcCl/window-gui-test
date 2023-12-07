@@ -6,10 +6,10 @@
 
 TextureManager::~TextureManager(){
     Texture theTexture;
-	for (std::map<std::string, Texture>::iterator it = allTextures.begin(); it != allTextures.end(); it++)
+	for (std::map<std::string, Texture>::iterator it = allTextures.begin(); it != allTextures.end(); )
 	{
         theTexture = it->second;
-        allTextures.erase(it);
+        allTextures.erase(it++);
         glDeleteTextures(1, &(theTexture.id));
 	}
 }

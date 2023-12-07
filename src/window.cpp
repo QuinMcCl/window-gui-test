@@ -193,6 +193,16 @@ bool Window::shouldClose()
     return glfwWindowShouldClose(mWindow);
 }
 
+int Window::getWidth()
+{
+   return mWidth;
+}
+
+int Window::getHeight()
+{
+   return mHeight;
+}
+
 void Window::draw()
 {
     checkContext();
@@ -201,6 +211,13 @@ void Window::draw()
     glfw_enabled::draw();
     glfwSwapBuffers(mWindow);
     glfwPollEvents();
+}
+
+void Window::framebuffersizefun(int width, int height)
+{
+   mWidth = width;
+   mHeight = height;
+   glViewport(0, 0, mWidth, mHeight);
 }
 
 void Window::keyfun(int key, int scancode, int action, int mods)
