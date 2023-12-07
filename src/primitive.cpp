@@ -153,8 +153,7 @@ void Primitive::draw()
     mShader->setMat4("projection", mProjection);
     mShader->setMat4("view", mView);
     mShader->setMat4("model", mModel);
-
-    // bind textures on corresponding texture units
+    mShader->setInt("texture1", 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mImage->id);
 

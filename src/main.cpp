@@ -28,9 +28,6 @@ const unsigned int SCR_HEIGHT = 800;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-float lastX = SCR_WIDTH / 2.0f;
-float lastY = SCR_HEIGHT / 2.0f;
-bool firstMouse = true;
 
 // timing
 float deltaTime = 0.0f; // time between current frame and last frame
@@ -70,40 +67,31 @@ int main()
         glm::vec3(1.5f, 0.2f, -1.5f),
         glm::vec3(-1.3f, 1.0f, -1.5f)};
 
-    std::vector<glm::mat4> Models;
-
     TextureManager theTextureManager;
 
     stbi_set_flip_vertically_on_load(true);
     Texture container = theTextureManager.getTexture("../resources/container.jpg", 1);
     Texture wall = theTextureManager.getTexture("../resources/wall.jpg", 1);
 
-    // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
-    // -------------------------------------------------------------------------------------------
-    cameraShader.use();
-    cameraShader.setInt("texture1", 0);
+    Primitive *Cubes[10];
 
-    flatShader.use();
-    flatShader.setInt("texture1", 0);
-
-    Primitive * Cubes[10];
-
-    for (int i = 0; i < 10; i++){
+    for (int i = 0; i < 10; i++)
+    {
         Cubes[i] = new Primitive(CUBE, &cameraShader, &container);
         MainWindow.adopt(Cubes[i]);
-
     }
 
     Primitive Square(SQUARE, &flatShader, &wall);
 
     MainWindow.adopt(&Square);
 
+    MainWindow.adopt(&camera);
+
     // render loop
     // -----------
     while (!MainWindow.shouldClose())
     // while (!glfwWindowShouldClose(window))
     {
-        processInput(MainWindow.mWindow);
         // per-frame time logic
         // --------------------
         float currentFrame = static_cast<float>(glfwGetTime());
@@ -114,8 +102,6 @@ int main()
 
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        // camera/view transformation
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
 
@@ -130,7 +116,7 @@ int main()
         }
 
         model = glm::mat4(1.0f);
-        // model = glm::translate(model, glm::vec3(-0.125f, 0.0125f, 0.0f));
+        model = glm::translate(model, glm::vec3(-0.125f, 0.0125f, 0.0f));
         model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         model = glm::scale(model, glm::vec3(0.25f, 0.25f, 1.0f));
         view = glm::mat4(1.0f);
@@ -146,23 +132,6 @@ int main()
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime);
-}
-
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -170,34 +139,4 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
-}
-
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
-void mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
-{
-    float xpos = static_cast<float>(xposIn);
-    float ypos = static_cast<float>(yposIn);
-
-    if (firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
-    lastX = xpos;
-    lastY = ypos;
-
-    camera.ProcessMouseMovement(xoffset, yoffset);
-}
-
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
-{
-    camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }

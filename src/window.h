@@ -10,6 +10,7 @@ public:
     ~Window();
 
     bool shouldClose();
+    void keyfun(int key, int scancode, int action, int mods) override;
 
     void draw() override;
     GLFWwindow *mWindow;

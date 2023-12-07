@@ -140,6 +140,7 @@ Window::Window(unsigned int width, unsigned int height, const char *title)
     }
     glfwMakeContextCurrent(mWindow);
     glfwSetWindowUserPointer(mWindow, this);
+   //  glfwSetInputMode(mWindow, GLFW_STICKY_KEYS, GLFW_TRUE);
 
     glfwSetCharCallback(mWindow, windowcharfun);
     glfwSetCharModsCallback(mWindow, windowcharmodsfun);
@@ -200,6 +201,16 @@ void Window::draw()
     glfw_enabled::draw();
     glfwSwapBuffers(mWindow);
     glfwPollEvents();
+}
+
+void Window::keyfun(int key, int scancode, int action, int mods)
+{
+   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
+      glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+   }
+   else{
+      glfw_enabled::keyfun(key, scancode, action, mods);
+   }
 }
 
 void Window::checkContext()
