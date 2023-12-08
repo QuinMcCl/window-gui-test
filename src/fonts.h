@@ -1,7 +1,7 @@
 /*
 TODO:
-use freetype to load font (TTF, Opentype, etc) and render SDF to atlas
-save atlas
+read msdf atlas and csv
+instanced draw text
 
 
 */
@@ -29,17 +29,31 @@ struct Character
     glm::ivec2 Bearing;     // Offset from baseline to left/top of glyph
     unsigned int Advance;   // Offset to advance to next glyph
 };
+
+struct csvCharMeta
+{
+    char c;
+    double advance;
+    double charLeft;
+    double charBottom;
+    double charRight;
+    double charTop;
+    double atlasLeft;
+    double atlasBottom;
+    double atlasRight;
+    double atlasTop;
+};
+
 class Font : public glfw_enabled
 {
 public:
     std::map<char, Character> Characters;
     unsigned int VAO, VBO;
-    Shader * mShader;
+    Shader *mShader;
     std::string mText;
     glm::vec3 mPos;
 
-
-    Font(const char *filepathname, Shader * shader)
+    Font(const char *filepathname, Shader *shader)
     {
         mShader = shader;
         FT_Library ft;
@@ -119,17 +133,16 @@ public:
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void * )(3 * sizeof(float)));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
 
-    
-    void setTextPos(std::string text, glm::vec3 pos){
+    void setTextPos(std::string text, glm::vec3 pos)
+    {
         mText = text;
         mPos = pos;
     }
-
 
     void draw()
     {
@@ -147,7 +160,6 @@ public:
         float y = mPos.y;
         float scale = mPos.z;
 
-
         // iterate through all characters
         std::string::const_iterator c;
         for (c = mText.begin(); c != mText.end(); c++)
@@ -161,13 +173,13 @@ public:
             float h = ch.Size.y * scale;
             // update VBO for each character
             float vertices[6][5] = {
-                {xpos, ypos + h, 0.0f,0.0f, 0.0f},
-                {xpos, ypos, 0.0f,0.0f, 1.0f},
-                {xpos + w, ypos, 0.0f,1.0f, 1.0f},
+                {xpos, ypos + h, 0.0f, 0.0f, 0.0f},
+                {xpos, ypos, 0.0f, 0.0f, 1.0f},
+                {xpos + w, ypos, 0.0f, 1.0f, 1.0f},
 
-                {xpos, ypos + h, 0.0f,0.0f, 0.0f},
-                {xpos + w, ypos, 0.0f,1.0f, 1.0f},
-                {xpos + w, ypos + h, 0.0f,1.0f, 0.0f}};
+                {xpos, ypos + h, 0.0f, 0.0f, 0.0f},
+                {xpos + w, ypos, 0.0f, 1.0f, 1.0f},
+                {xpos + w, ypos + h, 0.0f, 1.0f, 0.0f}};
             // render glyph texture over quad
             glBindTexture(GL_TEXTURE_2D, ch.TextureID);
             // update content of VBO memory
@@ -185,6 +197,85 @@ public:
         glEnable(GL_CULL_FACE);
         glDepthMask(GL_TRUE); // Re-enable writing to the depth buffer
         glDisable(GL_BLEND);
+    }
+};
+
+class csvFont
+{
+    std::map<char, csvCharMeta> metaTable;
+    csvFont(const char * atlasPath, const char *metaPath)
+    {
+        FILE *fp = fopen(metaPath, "rb");
+
+        if (fp == NULL)
+        {
+            perror("Error opening file");
+            return;
+        }
+        else
+        {
+            char buffer[256];
+            while (fgets(buffer, 256, fp) != NULL)
+            {
+                csvCharMeta line;
+                char *pch = strtok(buffer, ",");
+                if (pch == NULL)
+                    return;
+                line.c = (char) atoi(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.advance = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.charLeft = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.charBottom = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.charRight = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.charTop = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.atlasLeft = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.atlasBottom = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.atlasRight = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch == NULL)
+                    return;
+                line.atlasTop = atof(pch);
+
+                pch = strtok(NULL, ",");
+                if (pch != NULL)
+                    return;
+
+                metaTable.insert(std::pair<char, csvCharMeta>(line.c, line));
+            }
+            fclose(fp);
+        }
     }
 };
 
