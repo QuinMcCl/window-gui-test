@@ -36,6 +36,11 @@ class Camera : public glfw_enabled
 public:
     // camera Attributes
     unsigned int mInputs[MAX_CAMERA_MOVEMENT];
+
+    bool mLeftMouseDown = false;
+    double mLeftDownPosX = 0.0f;
+    double mLeftDownPosY = 0.0f;
+
     glm::vec3 mPosition;
     glm::vec3 Front;
     glm::vec3 Up;
@@ -69,6 +74,7 @@ public:
     void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
 
     void cursorposfun(double xpos, double ypos) override;
+    void mousebuttonfun(int button, int action, int mods) override;
     void scrollfun(double xoffset, double yoffset) override;
     void update(float dt) override;
     void keyfun(int key, int scancode, int action, int mods) override;

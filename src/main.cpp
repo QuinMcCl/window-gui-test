@@ -14,6 +14,7 @@
 #include "texture.h"
 #include "primitive.h"
 #include "window.h"
+#include "fonts.h"
 
 #include <iostream>
 
@@ -53,6 +54,7 @@ int main()
     // ------------------------------------
     Shader cameraShader("../shaders/camera.vs", "../shaders/camera.fs");
     Shader flatShader("../shaders/flat.vs", "../shaders/flat.fs");
+    Shader fontShader("../shaders/font.vs", "../shaders/font.fs");
 
     // world space positions of our cubes
     glm::vec3 cubePositions[] = {
@@ -93,14 +95,20 @@ int main()
 
     Primitive Square(SQUARE, &flatShader, &wall);
 
+
+    
+    Font arial("../fonts/arial.ttf", &fontShader);
+
+
     MainWindow.adopt(&Square);
 
     MainWindow.adopt(&camera);
+    MainWindow.adopt(&arial);
+
 
     // render loop
     // -----------
     while (!MainWindow.shouldClose())
-    // while (!glfwWindowShouldClose(window))
     {
         // per-frame time logic
         // --------------------
@@ -125,7 +133,6 @@ int main()
             Cubes[i].updateMatricies(model, view, projection);
         }
 
-
         projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
         view = glm::mat4(1.0f);
         model = glm::mat4(1.0f);
@@ -133,6 +140,14 @@ int main()
         model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         model = glm::scale(model, glm::vec3(0.25f, 0.25f, 1.0f));
         Square.updateMatricies(model, view, projection);
+
+        projection = glm::ortho(0.0f, (float)MainWindow.getWidth(), 0.0f, (float)MainWindow.getHeight());
+        view = glm::mat4(1.0f);
+        model = glm::mat4(1.0f);
+        fontShader.use();
+        fontShader.setVec3("textColor",  glm::vec3(0.5f, 0.8f, 0.2f));
+        fontShader.setMat4("projection", projection);
+        arial.setTextPos(std::string("This is sample text"), glm::vec3(25.0f, 25.0f, 10.0f));
 
         MainWindow.draw();
     }

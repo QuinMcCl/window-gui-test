@@ -5,12 +5,13 @@ include(CTest)
 enable_testing()
 
 set(OpenGL_GL_PREFERENCE GLVND)
+include_directories(/usr/include/freetype2)
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
-
+find_package(Freetype REQUIRED)
 
 file(GLOB WINDOW_GUI_TEST_SRC CONFIGURE_DEPENDS "./src/*.h" "./src/*.cpp")
 
@@ -21,6 +22,7 @@ target_link_libraries(WINDOW_GUI_TEST
     GLU
     GL
     assimp
+    ${FREETYPE_LIBRARIES}
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

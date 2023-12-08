@@ -89,6 +89,8 @@ void Camera::cursorposfun(double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
+    if (mLeftMouseDown != GLFW_PRESS)return;
+
     xoffset *= MouseSensitivity;
     yoffset *= MouseSensitivity;
 
@@ -106,6 +108,24 @@ void Camera::cursorposfun(double xpos, double ypos)
 
     // update Front, Right and Up Vectors using the updated Euler angles
     updateCameraVectors();
+}
+
+void Camera::mousebuttonfun(int button, int action, int mods) 
+{
+    if (action == GLFW_REPEAT)
+        return;
+    if(button == GLFW_MOUSE_BUTTON_LEFT){
+        if(action == GLFW_PRESS)
+        {
+            mLeftMouseDown = GLFW_PRESS;
+            mLeftDownPosX = lastX;
+            mLeftDownPosY = lastY;
+        }
+        else if(action == GLFW_RELEASE)
+        {
+            mLeftMouseDown = GLFW_RELEASE;
+        }
+    }
 }
 
 void Camera::scrollfun(double xoffset, double yoffset)
