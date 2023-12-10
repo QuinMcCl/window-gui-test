@@ -1,6 +1,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include <glm/glm.hpp>
 #include <string>
 #include <map>
 
@@ -18,7 +19,7 @@ public:
     unsigned int unloadTexture(std::string filePath, unsigned int type);
 private:
     std::map<std::string, Texture> allTextures;
-    unsigned int TextureFromFile(std::string filePath, bool gamma = false);
+    Texture TextureFromFile(std::string filePath, bool gamma = false);
 };
 
 #endif

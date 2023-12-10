@@ -20,8 +20,6 @@ std::vector<Vertex> square_vertices = {
     Vertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
     Vertex{{-1.0f, 1.0f, .0f}, {0.0f, 1.0f}},
 };
-
-
 std::vector<unsigned int> square_indeces = {
     0,
     3,
@@ -86,6 +84,7 @@ std::vector<unsigned int> cube_indeces = {
     11,
     10,
 };
+
 Primitive::Primitive(primitive_type type, const Shader *shader, const Texture *image)
 {
     mShader = shader;

@@ -10,10 +10,11 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "shader.h"
-#include "camera.h"
 #include "texture.h"
-#include "primitive.h"
 #include "window.h"
+#include "camera.h"
+#include "primitive.h"
+#include "instancedPrimitive.h"
 #include "fonts.h"
 
 #include <iostream>
@@ -34,6 +35,9 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
+
+unsigned int uniformBufferedObject::mAllBindingPoints = 0;
+
 int main()
 {
 
@@ -53,8 +57,21 @@ int main()
     // build and compile our shader zprogram
     // ------------------------------------
     Shader cameraShader("../shaders/camera.vs", "../shaders/camera.fs");
+    Shader InstancedCameraShader("../shaders/instanced_camera.vs", "../shaders/instanced_camera.fs");
     Shader flatShader("../shaders/flat.vs", "../shaders/flat.fs");
+    Shader instancedFlatShader("../shaders/instanced_flat.vs", "../shaders/instanced_flat.fs");
     Shader fontShader("../shaders/font.vs", "../shaders/font.fs");
+
+
+    TextureManager theTextureManager;
+
+    stbi_set_flip_vertically_on_load(true);
+    Texture container = theTextureManager.getTexture("../resources/container.jpg", 1);
+    Texture wall = theTextureManager.getTexture("../resources/wall.jpg", 1);
+    Texture fontAtlas = theTextureManager.getTexture("../fonts/ArialFontAtlas.png", 1);
+
+
+
 
     // world space positions of our cubes
     glm::vec3 cubePositions[] = {
@@ -69,41 +86,20 @@ int main()
         glm::vec3(1.5f, 0.2f, -1.5f),
         glm::vec3(-1.3f, 1.0f, -1.5f)};
 
-    TextureManager theTextureManager;
+    InstancedPrimitive Cubes(CUBE, &InstancedCameraShader, &container);
 
-    stbi_set_flip_vertically_on_load(true);
-    Texture container = theTextureManager.getTexture("../resources/container.jpg", 1);
-    Texture wall = theTextureManager.getTexture("../resources/wall.jpg", 1);
-
-    Primitive Cubes[] = {
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-        {CUBE, &cameraShader, &container},
-    };
-
-    for (int i = 0; i < 10; i++)
-    {
-        MainWindow.adopt(&Cubes[i]);
-    }
 
     Primitive Square(SQUARE, &flatShader, &wall);
 
 
-    
-    Font arial("../fonts/arial.ttf", &fontShader);
+    FontRenderer FontRenderer("../fonts/ArialFontAtlasMeta.csv", &fontShader, &fontAtlas);
 
-
-    MainWindow.adopt(&Square);
 
     MainWindow.adopt(&camera);
-    MainWindow.adopt(&arial);
+    MainWindow.adopt(&Cubes);
+    MainWindow.adopt(&Square);
+    MainWindow.adopt(&FontRenderer);
+
 
 
     // render loop
@@ -121,33 +117,35 @@ int main()
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)MainWindow.getWidth() / (float)MainWindow.getHeight(), 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 models[] = {glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f)};
 
         for (unsigned int i = 0; i < 10; i++)
         {
             float angle = 20.0f * i * currentFrame;
-            model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-            model = glm::translate(model, cubePositions[i]);
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-            Cubes[i].updateMatricies(model, view, projection);
+            models[i] = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+            models[i] = glm::translate(models[i], cubePositions[i]);
+            models[i] = glm::rotate(models[i], glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            models[i] = glm::scale(models[i], glm::vec3(0.5f, 0.5f, 0.5f));
         }
+        Cubes.updateMatricies(10, models, view, projection);
 
         projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
         view = glm::mat4(1.0f);
-        model = glm::mat4(1.0f);
+        glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(-0.125f, 0.0125f, 0.0f));
         model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         model = glm::scale(model, glm::vec3(0.25f, 0.25f, 1.0f));
         Square.updateMatricies(model, view, projection);
 
-        projection = glm::ortho(0.0f, (float)MainWindow.getWidth(), 0.0f, (float)MainWindow.getHeight());
+
+
+        projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
         view = glm::mat4(1.0f);
         model = glm::mat4(1.0f);
-        fontShader.use();
-        fontShader.setVec3("textColor",  glm::vec3(0.5f, 0.8f, 0.2f));
-        fontShader.setMat4("projection", projection);
-        arial.setTextPos(std::string("This is sample text"), glm::vec3(25.0f, 25.0f, 10.0f));
+        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 0.5f));
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 1.0f));
+        FontRenderer.updateMatricies(model, view, projection);
+        FontRenderer.setColorText(glm::vec4(1.0f, 1.0f, 0.0f, 1.0f), "@@@");
 
         MainWindow.draw();
     }
