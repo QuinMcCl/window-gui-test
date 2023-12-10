@@ -20,6 +20,8 @@ std::vector<Vertex> square_vertices = {
     Vertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
     Vertex{{-1.0f, 1.0f, .0f}, {0.0f, 1.0f}},
 };
+
+
 std::vector<unsigned int> square_indeces = {
     0,
     3,
@@ -84,7 +86,6 @@ std::vector<unsigned int> cube_indeces = {
     11,
     10,
 };
-
 Primitive::Primitive(primitive_type type, const Shader *shader, const Texture *image)
 {
     mShader = shader;
@@ -140,19 +141,16 @@ Primitive::~Primitive()
 
 void Primitive::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
-    mModel = model;
-    mView = view;
-    mProjection = projection;
+    mShader->use();
+    mShader->setMat4("projection", projection);
+    mShader->setMat4("view", view);
+    mShader->setMat4("model", model);
 }
 
 void Primitive::draw()
 {
     // activate shader
     mShader->use();
-    mShader->setInt("texture1", 0);
-    mShader->setMat4("projection", mProjection);
-    mShader->setMat4("view", mView);
-    mShader->setMat4("model", mModel);
     mShader->setInt("texture1", 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mImage->id);

@@ -4,29 +4,56 @@ layout (location = 1) in vec2 aTexCoord;
 
 out vec2 TexCoord;
 
-struct atlasChar {
-   vec2 posScale;
-   vec2 posOffset;
-   vec2 texScale;
-   vec2 texOffset;
-}
 
-uniform alphabet{
-    atlasChar[95];
+struct letterStruct
+{
+	vec2 charSize;
+	vec2 charBearing;
+	vec2 textSize;
+	vec2 textBearing;
 };
 
+struct charStruct
+{
+	int index;
+	int pad1;
+	int pad2;
+	int pad3;
+	vec3 Offset;
+	int pad4;
+};
 
-uniform int charIndex[100];
-uniform vec2 charOffsets[100];
+layout(std140) uniform uboAlphabetBlock
+{
+	letterStruct letters[96];
+}Alphabet;
 
+layout(std140) uniform uboTextBlock
+{
+	charStruct chars[256];
+};
 
-// uniform mat4 model;
-// uniform mat4 view;
+uniform mat4 model;
+uniform mat4 view;
 uniform mat4 projection;
+
+// uniform int index;
+// uniform vec3 Offset;
 
 void main()
 {
-    vec2 newPos = (alphabet.atlasChar[charIndex[gl_InstanceID]].posScale * aPos) + alphabet.atlasChar[charIndex[gl_InstanceID]].posOffset + charOffsets[gl_InstanceID];
-    gl_Position = projection * vec4(newPos, 0.0, 1.0);
-	TexCoord = (alphabet.atlasChar[charIndex[gl_InstanceID]].texScale * aTexCoord) + alphabet.atlasChar[charIndex[gl_InstanceID]].texOffset;
-} 
+	int CharIndex = chars[gl_InstanceID].index;
+	vec3 CharOffset = chars[gl_InstanceID].Offset;
+
+	vec2 bPos = aPos;
+	bPos *= Alphabet.letters[CharIndex].charSize;
+	bPos += Alphabet.letters[CharIndex].charBearing;
+
+	vec2 bTexCoord = aTexCoord;
+	bTexCoord *= Alphabet.letters[CharIndex].textSize;
+	bTexCoord += Alphabet.letters[CharIndex].textBearing;
+
+	gl_Position = projection * view * model * vec4((vec3(bPos,0.0) + CharOffset), 1.0f);
+	TexCoord = bTexCoord;
+}
+

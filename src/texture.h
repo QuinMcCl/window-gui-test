@@ -7,7 +7,7 @@
 struct Texture
 {
     unsigned int id;
-    unsigned int type;
+    glm::vec2 size;
 };
 
 class TextureManager
