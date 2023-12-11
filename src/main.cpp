@@ -49,7 +49,7 @@ int main()
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    // build and compile our shader zprogram
+    // build and compile our shader program
     // ------------------------------------
     Shader cameraShader("../shaders/camera.vs", "../shaders/camera.fs");
     Shader InstancedCameraShader("../shaders/instanced_camera.vs", "../shaders/instanced_camera.fs");
