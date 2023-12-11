@@ -7,15 +7,17 @@ class Window : public glfw_enabled
 {
 public:
     Window(unsigned int width, unsigned int height, const char *title);
-    ~Window();
+    void cleanup();
 
     bool shouldClose();
 
     int getWidth();
     int getHeight();
 
-    void framebuffersizefun(int width, int height) override;
-    void keyfun(int key, int scancode, int action, int mods) override;
+    bool handleEvent(GLFW_EVENT event) override;
+
+    bool framebuffersizefun(FRAMEBUFFERSIZE_EVENT event);
+    bool keyfun(KEY_EVENT event);
 
     void draw() override;
     GLFWwindow *mWindow;

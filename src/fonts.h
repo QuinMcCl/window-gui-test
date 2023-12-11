@@ -173,6 +173,23 @@ public:
         uboAlphabetBlock.fill<letterStruct>(AlphabetData);
     }
 
+    void cleanup() override
+    {
+        // optional: de-allocate all resources once they've outlived their purpose:
+        // ------------------------------------------------------------------------
+        if (VAO != GL_FALSE)
+        {
+            glDeleteVertexArrays(1, &VAO);
+            VAO = GL_FALSE;
+        }
+        if (VBO != GL_FALSE)
+        {
+            glDeleteBuffers(1, &VBO);
+            VBO = GL_FALSE;
+        }
+        glfw_enabled::cleanup();
+    }
+
     void updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
     {
         mShader->use();
@@ -189,9 +206,11 @@ public:
         std::vector<charStruct> TextData;
         glm::vec3 totalOffset = glm::vec3(0.0, 0.0, 0.0);
 
-        for(std::string::iterator it = text.begin(); it != text.end(); it++){
+        for (std::string::iterator it = text.begin(); it != text.end(); it++)
+        {
             std::map<char, charStruct>::iterator tableIt = metaTable.find(*it);
-            if (tableIt != metaTable.end()){
+            if (tableIt != metaTable.end())
+            {
                 charStruct foundChar = tableIt->second;
                 glm::vec3 addOffset = foundChar.Offset;
                 foundChar.Offset = totalOffset;
@@ -217,7 +236,7 @@ public:
         glBindVertexArray(VAO);
 
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, mText.size());
-        
+
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
 

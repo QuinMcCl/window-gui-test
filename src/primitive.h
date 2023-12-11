@@ -17,7 +17,7 @@ class Primitive : public glfw_enabled
 {
 public:
     Primitive(primitive_type type, const Shader *shader, const Texture *image);
-    ~Primitive();
+    void cleanup();
     void updateMatricies(glm::mat4 mModel, glm::mat4 mView, glm::mat4 mProjection);
     void draw() override;
 protected:

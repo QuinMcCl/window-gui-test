@@ -128,14 +128,25 @@ Primitive::Primitive(primitive_type type, const Shader *shader, const Texture *i
     glEnableVertexAttribArray(1);
 }
 
-Primitive::~Primitive()
-{
-
+void Primitive::cleanup(){
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    if (VAO != GL_FALSE)
+    {
+        glDeleteVertexArrays(1, &VAO);
+        VAO = GL_FALSE;
+    }
+    if (VBO != GL_FALSE)
+    {
+        glDeleteBuffers(1, &VBO);
+        VBO = GL_FALSE;
+    }
+    if (EBO != GL_FALSE)
+    {
+        glDeleteBuffers(1, &EBO);
+        EBO = GL_FALSE;
+    }
+    glfw_enabled::cleanup();
 }
 
 void Primitive::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)

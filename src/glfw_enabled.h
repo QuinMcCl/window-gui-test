@@ -8,20 +8,152 @@
 
 #include <string>
 
+enum eGLFWEvent
+{
+    CHAR,
+    CHARMOD,
+    CURSORENTER,
+    CURSORPOS,
+    DROP,
+    FRAMEBUFFERSIZE,
+    JOYSTICK,
+    KEY,
+    MONITOR,
+    MOUSEBUTTON,
+    SCROLL,
+    CLOSE,
+    CONTENTSCALE,
+    FOCUS,
+    ICONIFY,
+    MAXIMIZE,
+    POS,
+    REFRESH,
+    SIZE
+};
+
+struct CHAR_EVENT
+{
+    unsigned int codepoint;
+};
+struct CHARMOD_EVENT
+{
+    unsigned int codepoint;
+    int mods;
+};
+struct CURSORENTER_EVENT
+{
+    int entered;
+};
+struct CURSORPOS_EVENT
+{
+    double xpos;
+    double ypos;
+};
+struct DROP_EVENT
+{
+    int path_count;
+    const char **paths;
+};
+struct FRAMEBUFFERSIZE_EVENT
+{
+    int width;
+    int height;
+};
+struct JOYSTICK_EVENT
+{
+    int jid;
+    int event;
+};
+struct KEY_EVENT
+{
+    int key;
+    int scancode;
+    int action;
+    int mods;
+};
+struct MONITOR_EVENT
+{
+    GLFWmonitor *monitor;
+    int event;
+};
+struct MOUSEBUTTON_EVENT
+{
+    int button;
+    int action;
+    int mods;
+};
+struct SCROLL_EVENT
+{
+    double xoffset;
+    double yoffset;
+};
+struct CLOSE_EVENT
+{
+};
+struct CONTENTSCALE_EVENT
+{
+    float xscale;
+    float yscale;
+};
+struct FOCUS_EVENT
+{
+    int focused;
+};
+struct ICONIFY_EVENT
+{
+    int iconified;
+};
+struct MAXIMIZE_EVENT
+{
+    int maximized;
+};
+struct POS_EVENT
+{
+    int xpos;
+    int ypos;
+};
+struct REFRESH_EVENT
+{
+};
+struct SIZE_EVENT
+{
+    int width;
+    int height;
+};
+
+struct GLFW_EVENT
+{
+    eGLFWEvent Type;
+    union
+    {
+        CHAR_EVENT mChar;
+        CHARMOD_EVENT mCharMod;
+        CURSORENTER_EVENT mCursorEnter;
+        CURSORPOS_EVENT mCursorPos;
+        DROP_EVENT mDrop;
+        FRAMEBUFFERSIZE_EVENT mFrameBufferSize;
+        JOYSTICK_EVENT mJoystick;
+        KEY_EVENT mKey;
+        MONITOR_EVENT mMonitor;
+        MOUSEBUTTON_EVENT mMouseButton;
+        SCROLL_EVENT mScroll;
+        CLOSE_EVENT mClose;
+        CONTENTSCALE_EVENT mContenteScale;
+        FOCUS_EVENT mFocus;
+        ICONIFY_EVENT mIconify;
+        MAXIMIZE_EVENT mMaximize;
+        POS_EVENT mPos;
+        REFRESH_EVENT mRefresh;
+        SIZE_EVENT mSize;
+    };
+};
+
 class glfw_enabled
 {
 private:
     std::vector<glfw_enabled *> children;
 
 public:
-    glfw_enabled()
-    {
-    }
-    ~glfw_enabled()
-    {
-        this->children.clear();
-    }
-
     virtual void adopt(glfw_enabled *child)
     {
         this->children.push_back(child);
@@ -38,6 +170,12 @@ public:
         return NULL;
     }
 
+    virtual void cleanup()
+    {
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
+            (*c)->cleanup();
+    }
+
     virtual void update(float dt)
     {
         for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
@@ -50,101 +188,13 @@ public:
             (*c)->draw();
     }
 
-    virtual void charfun(unsigned int codepoint)
+    virtual bool handleEvent(GLFW_EVENT event)
     {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->charfun(codepoint);
-    }
-    virtual void charmodsfun(unsigned int codepoint, int mods)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->charmodsfun(codepoint, mods);
-    }
-    virtual void cursorenterfun(int entered)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->cursorenterfun(entered);
-    }
-    virtual void cursorposfun(double xpos, double ypos)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->cursorposfun(xpos, ypos);
-    }
-    virtual void dropfun(int path_count, const char **paths)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->dropfun(path_count, paths);
-    }
-    virtual void framebuffersizefun(int width, int height)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->framebuffersizefun(width, height);
-    }
-    virtual void joystickfun(int jid, int event)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->joystickfun(jid, event);
-    }
-    virtual void keyfun(int key, int scancode, int action, int mods)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->keyfun(key, scancode, action, mods);
-    }
-    virtual void monitorfun(GLFWmonitor *monitor, int event)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->monitorfun(monitor, event);
-    }
-    virtual void mousebuttonfun(int button, int action, int mods)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->mousebuttonfun(button, action, mods);
-    }
-    virtual void scrollfun(double xoffset, double yoffset)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->scrollfun(xoffset, yoffset);
-    }
-    virtual void closefun()
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->closefun();
-    }
-    virtual void contentscalefun(float xscale, float yscale)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->contentscalefun(xscale, yscale);
-    }
-    virtual void focusfun(int focused)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->focusfun(focused);
-    }
-    virtual void iconifyfun(int iconified)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->iconifyfun(iconified);
-    }
-    virtual void maximizefun(int maximized)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->maximizefun(maximized);
-    }
-    virtual void posfun(int xpos, int ypos)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->posfun(xpos, ypos);
-    }
-    virtual void refreshfun()
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->refreshfun();
-    }
-    virtual void sizefun(int width, int height)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->sizefun(width, height);
-    }
+        bool stop = false;
+        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); !stop && c != this->children.end(); ++c)
+            stop |= (*c)->handleEvent(event);
+        return stop;
+    };
 };
 
 class uniformBufferedObject

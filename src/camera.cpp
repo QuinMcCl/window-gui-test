@@ -73,70 +73,6 @@ glm::mat4 Camera::GetViewMatrix()
     return glm::lookAt(mPosition, mPosition + Front, Up);
 }
 
-void Camera::cursorposfun(double xpos, double ypos)
-{
-
-    if (firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
-    lastX = xpos;
-    lastY = ypos;
-
-    if (mLeftMouseDown != GLFW_PRESS)return;
-
-    xoffset *= MouseSensitivity;
-    yoffset *= MouseSensitivity;
-
-    Yaw += xoffset;
-    Pitch += yoffset;
-
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (constrainPitch)
-    {
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
-    }
-
-    // update Front, Right and Up Vectors using the updated Euler angles
-    updateCameraVectors();
-}
-
-void Camera::mousebuttonfun(int button, int action, int mods) 
-{
-    if (action == GLFW_REPEAT)
-        return;
-    if(button == GLFW_MOUSE_BUTTON_LEFT){
-        if(action == GLFW_PRESS)
-        {
-            mLeftMouseDown = GLFW_PRESS;
-            mLeftDownPosX = lastX;
-            mLeftDownPosY = lastY;
-        }
-        else if(action == GLFW_RELEASE)
-        {
-            mLeftMouseDown = GLFW_RELEASE;
-        }
-    }
-}
-
-void Camera::scrollfun(double xoffset, double yoffset)
-{
-    Zoom -= (float)yoffset;
-    if (Zoom < 1.0f)
-        Zoom = 1.0f;
-    if (Zoom > 45.0f)
-        Zoom = 45.0f;
-}
-
 void Camera::update(float dt)
 {
     float velocity = MovementSpeed * dt;
@@ -154,15 +90,116 @@ void Camera::update(float dt)
         mPosition -= Up * velocity;
 }
 
-void Camera::keyfun(int key, int scancode, int action, int mods)
+bool Camera::handleEvent(GLFW_EVENT event)
 {
-    if (action == GLFW_REPEAT)
-        return;
-    std::map<unsigned int, Camera_Movement>::iterator it = inputMap.find(key);
+    bool stop = false;
+    switch (event.Type)
+    {
+    case CURSORPOS:
+        stop |= cursorposfun(event.mCursorPos);
+        break;
+    case MOUSEBUTTON:
+        stop |= mousebuttonfun(event.mMouseButton);
+        break;
+    case SCROLL:
+        stop |= scrollfun(event.mScroll);
+        break;
+    case KEY:
+        stop |= keyfun(event.mKey);
+        break;
+    default:
+        break;
+    }
+
+    if (!stop)
+        stop |= glfw_enabled::handleEvent(event);
+
+    return stop;
+};
+
+bool Camera::cursorposfun(CURSORPOS_EVENT event)
+{
+    bool stop = false;
+    if (firstMouse)
+    {
+        lastX = event.xpos;
+        lastY = event.ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = event.xpos - lastX;
+    float yoffset = lastY - event.ypos; // reversed since y-coordinates go from bottom to top
+
+    lastX = event.xpos;
+    lastY = event.ypos;
+
+    if (mLeftMouseDown == GLFW_PRESS)
+    {
+
+        xoffset *= MouseSensitivity;
+        yoffset *= MouseSensitivity;
+
+        Yaw += xoffset;
+        Pitch += yoffset;
+
+        // make sure that when pitch is out of bounds, screen doesn't get flipped
+        if (constrainPitch)
+        {
+            if (Pitch > 89.0f)
+                Pitch = 89.0f;
+            if (Pitch < -89.0f)
+                Pitch = -89.0f;
+        }
+
+        // update Front, Right and Up Vectors using the updated Euler angles
+        updateCameraVectors();
+    }
+    return stop;
+}
+
+bool Camera::mousebuttonfun(MOUSEBUTTON_EVENT event)
+{
+    bool stop = false;
+    if (event.action == GLFW_REPEAT)
+        return stop;
+    if (event.button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        if (event.action == GLFW_PRESS)
+        {
+            mLeftMouseDown = GLFW_PRESS;
+            mLeftDownPosX = lastX;
+            mLeftDownPosY = lastY;
+        }
+        else if (event.action == GLFW_RELEASE)
+        {
+            mLeftMouseDown = GLFW_RELEASE;
+        }
+    }
+    return stop;
+}
+
+bool Camera::scrollfun(SCROLL_EVENT event)
+{
+    bool stop = false;
+    Zoom -= (float)event.yoffset;
+    if (Zoom < 1.0f)
+        Zoom = 1.0f;
+    if (Zoom > 45.0f)
+        Zoom = 45.0f;
+    return stop;
+}
+
+bool Camera::keyfun(KEY_EVENT event)
+{
+    bool stop = false;
+    if (event.action == GLFW_REPEAT)
+        return stop;
+    std::map<unsigned int, Camera_Movement>::iterator it = inputMap.find(event.key);
     if (it != inputMap.end())
     {
-        mInputs[it->second] = action;
+        mInputs[it->second] = event.action;
     }
+    return stop;
 }
 
 void Camera::updateCameraVectors()

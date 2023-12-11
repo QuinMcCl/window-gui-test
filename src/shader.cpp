@@ -7,29 +7,31 @@
 
 #include "shader.h"
 
-char * readFile(const char* filename){
-  std::FILE *fp = std::fopen(filename, "rb");
-  if (fp != NULL)
-  {
-    std::fseek(fp, 0, SEEK_END);
-    long fileSize = std::ftell(fp);
-    std::fseek(fp, 0, SEEK_SET);
+char *readFile(const char *filename)
+{
+    std::FILE *fp = std::fopen(filename, "rb");
+    if (fp != NULL)
+    {
+        std::fseek(fp, 0, SEEK_END);
+        long fileSize = std::ftell(fp);
+        std::fseek(fp, 0, SEEK_SET);
 
-    char * contents = new char[fileSize+1];
-    contents[fileSize] = '\0';
-    std::rewind(fp);
-    std::fread(contents, fileSize, 1, fp);
-    std::fclose(fp);
-    return(contents);
-  }
-  throw(errno);
+        char *contents = new char[fileSize + 1];
+        contents[fileSize] = '\0';
+        std::rewind(fp);
+        std::fread(contents, fileSize, 1, fp);
+        std::fclose(fp);
+        return (contents);
+    }
+    throw(errno);
 }
 
-unsigned int CompileShader(unsigned int type, const char *shaderCode){
+unsigned int CompileShader(unsigned int type, const char *shaderCode)
+{
     unsigned int id = GL_FALSE;
     GLint success = GL_FALSE;
     GLchar infoLog[1024] = "";
-    
+
     id = glCreateShader(type);
     glShaderSource(id, 1, &shaderCode, NULL);
     glCompileShader(id);
@@ -43,7 +45,8 @@ unsigned int CompileShader(unsigned int type, const char *shaderCode){
     return id;
 }
 
-unsigned int linkShader(unsigned int vertex, unsigned int fragment){
+unsigned int linkShader(unsigned int vertex, unsigned int fragment)
+{
     unsigned int id = GL_FALSE;
     GLint success = GL_FALSE;
     GLchar infoLog[1024] = "";
@@ -62,18 +65,16 @@ unsigned int linkShader(unsigned int vertex, unsigned int fragment){
     return id;
 }
 
-
 Shader::Shader(const char *vertexPath, const char *fragmentPath)
 {
     ID = GL_FALSE;
     // 1. retrieve the vertex/fragment source code from filePath
-    const char * vertexCode;
-    const char * fragmentCode;
+    const char *vertexCode;
+    const char *fragmentCode;
     try
     {
         vertexCode = readFile(vertexPath);
         fragmentCode = readFile(fragmentPath);
-
     }
     catch (std::exception &e)
     {
@@ -89,17 +90,21 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath)
     delete[] fragmentCode;
 
     // 3. link shaders
-    if(vertex != GL_FALSE && fragment != GL_FALSE)
+    if (vertex != GL_FALSE && fragment != GL_FALSE)
         ID = linkShader(vertex, fragment);
 
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);
     glDeleteShader(fragment);
-
 }
 
-Shader::~Shader(){
-    glDeleteShader(ID);
+void Shader::cleanup()
+{
+    if (ID != GL_FALSE)
+    {
+        glDeleteShader(ID);
+        ID = GL_FALSE;
+    }
 }
 
 void Shader::use() const
@@ -160,6 +165,7 @@ void Shader::setMat4(const std::string &name, const unsigned int count, const gl
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), count, GL_FALSE, (const GLfloat *)mat);
 }
 
-void Shader::bindBuffer(const char * name, unsigned int BindingIndex) const {
+void Shader::bindBuffer(const char *name, unsigned int BindingIndex) const
+{
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, name), BindingIndex);
 }

@@ -19,11 +19,6 @@
 
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
-void mouse_callback(GLFWwindow *window, double xpos, double ypos);
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
-
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
@@ -42,7 +37,7 @@ int main()
 {
 
     Window testWindow(10, 10, "you dont see me");
-    testWindow.~Window();
+    testWindow.cleanup();
 
     Window MainWindow(SCR_WIDTH, SCR_HEIGHT, "Some Window");
     // tell GLFW to capture our mouse
@@ -150,17 +145,16 @@ int main()
         MainWindow.draw();
     }
 
+    MainWindow.cleanup();
+    theTextureManager.cleanup();
+    cameraShader.cleanup();
+    InstancedCameraShader.cleanup();
+    flatShader.cleanup();
+    instancedFlatShader.cleanup();
+    fontShader.cleanup();
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
-}
-
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow *window, int width, int height)
-{
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
-    glViewport(0, 0, width, height);
 }

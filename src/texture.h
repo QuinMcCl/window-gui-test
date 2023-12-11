@@ -14,7 +14,7 @@ struct Texture
 class TextureManager
 {
 public:
-    ~TextureManager();
+    void cleanup();
     Texture getTexture(std::string filePath, unsigned int type);
     unsigned int unloadTexture(std::string filePath, unsigned int type);
 private:

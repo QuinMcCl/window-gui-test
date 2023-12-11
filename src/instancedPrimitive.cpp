@@ -8,10 +8,6 @@ InstancedPrimitive::InstancedPrimitive(primitive_type type, const Shader *shader
 
 }
 
-InstancedPrimitive::~InstancedPrimitive()
-{
-}
-
 void InstancedPrimitive::updateMatricies(unsigned int modelCount, glm::mat4 model[], glm::mat4 view, glm::mat4 projection)
 {
     mShader->use();

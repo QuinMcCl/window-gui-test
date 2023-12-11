@@ -4,7 +4,7 @@
 
 #include "texture.h"
 
-TextureManager::~TextureManager()
+void TextureManager::cleanup()
 {
     Texture theTexture;
     for (std::map<std::string, Texture>::iterator it = allTextures.begin(); it != allTextures.end();)

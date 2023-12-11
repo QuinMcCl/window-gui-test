@@ -73,11 +73,13 @@ public:
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
     void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
 
-    void cursorposfun(double xpos, double ypos) override;
-    void mousebuttonfun(int button, int action, int mods) override;
-    void scrollfun(double xoffset, double yoffset) override;
+
     void update(float dt) override;
-    void keyfun(int key, int scancode, int action, int mods) override;
+    bool handleEvent(GLFW_EVENT event) override;
+    bool cursorposfun(CURSORPOS_EVENT event);
+    bool mousebuttonfun(MOUSEBUTTON_EVENT event);
+    bool scrollfun(SCROLL_EVENT event);
+    bool keyfun(KEY_EVENT event);
 
 private:
     // calculates the front vector from the Camera's (updated) Euler Angles
