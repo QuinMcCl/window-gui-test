@@ -20,12 +20,17 @@ public:
     void cleanup();
     void updateMatricies(glm::mat4 mModel, glm::mat4 mView, glm::mat4 mProjection);
     void draw() override;
+
 protected:
     const Shader *mShader;
     const Texture *mImage;
+    glm::mat4 mModel;
+    glm::mat4 mView;
+    glm::mat4 mProjection;
     unsigned int VAO;
     std::vector<unsigned int> mIndeces;
     std::vector<Vertex> mVertices;
+
 private:
     unsigned int VBO, EBO;
 };

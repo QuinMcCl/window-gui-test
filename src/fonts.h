@@ -49,6 +49,7 @@ private:
     const Shader *mShader;
     glm::mat4 mModel, mView, mProjection;
     std::string mText;
+    glm::vec4 mColor;
 
 public:
     FontRenderer(const char *metaPath, const Shader *shader, Texture *Atlas);

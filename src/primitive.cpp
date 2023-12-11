@@ -151,16 +151,18 @@ void Primitive::cleanup(){
 
 void Primitive::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
-    mShader->use();
-    mShader->setMat4("projection", projection);
-    mShader->setMat4("view", view);
-    mShader->setMat4("model", model);
+    mModel = model;
+    mView = view;
+    mProjection = projection;
 }
 
 void Primitive::draw()
 {
     // activate shader
     mShader->use();
+    mShader->setMat4("projection", mProjection);
+    mShader->setMat4("view", mView);
+    mShader->setMat4("model", mModel);
     mShader->setInt("texture1", 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mImage->id);

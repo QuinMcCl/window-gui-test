@@ -5,9 +5,6 @@ FontRenderer::FontRenderer(const char *metaPath, const Shader *shader, Texture *
 {
     mShader = shader;
     mAtlas = Atlas;
-    mShader->use();
-    mShader->bindBuffer(uboAlphabetBlock.getName().c_str(), uboAlphabetBlock.getBlockBindingIndex());
-    mShader->bindBuffer(uboTextBlock.getName().c_str(), uboTextBlock.getBlockBindingIndex());
 
     // parse csv
     FILE *fp = fopen(metaPath, "rb");
@@ -82,7 +79,7 @@ FontRenderer::FontRenderer(const char *metaPath, const Shader *shader, Texture *
             thisChar.index = AlphabetData.size();
             thisChar.Offset = glm::vec3(advance, 0.0, 0.0);
 
-            line.charBearing = glm::vec2(charLeft, charBottom);
+            line.charBearing = glm::vec2(charLeft, 1.0f -charTop);
             line.charSize = glm::vec2(charRight - charLeft, charTop - charBottom);
             line.textBearing = glm::vec2(atlasLeft, atlasBottom) / mAtlas->size;
             line.textSize = glm::vec2(atlasRight - atlasLeft, atlasTop - atlasBottom) / mAtlas->size;
@@ -141,31 +138,38 @@ void FontRenderer::cleanup()
 
 void FontRenderer::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
-    mShader->use();
-    mShader->setMat4("projection", projection);
-    mShader->setMat4("view", view);
-    mShader->setMat4("model", model);
+    mModel = model;
+    mView = view;
+    mProjection = projection;
 }
 
 void FontRenderer::setColorText(glm::vec4 color, std::string text)
 {
     mText = text;
-    mShader->setVec4("TextColor", color);
-
+    mColor = color;
     std::vector<charStruct> TextData;
     glm::vec3 totalOffset = glm::vec3(0.0, 0.0, 0.0);
 
     for (std::string::iterator it = text.begin(); it != text.end(); it++)
     {
-        std::map<char, charStruct>::iterator tableIt = metaTable.find(*it);
-        if (tableIt != metaTable.end())
+        if(*it == '\n')
         {
-            charStruct foundChar = tableIt->second;
-            glm::vec3 addOffset = foundChar.Offset;
-            foundChar.Offset = totalOffset;
-            TextData.push_back(foundChar);
-            totalOffset += addOffset;
+            totalOffset.x = 0;
+            totalOffset.y += 1;
         }
+        else
+        {
+            std::map<char, charStruct>::iterator tableIt = metaTable.find(*it);
+            if (tableIt != metaTable.end())
+            {
+                charStruct foundChar = tableIt->second;
+                glm::vec3 addOffset = foundChar.Offset;
+                foundChar.Offset = totalOffset;
+                TextData.push_back(foundChar);
+                totalOffset += addOffset;
+            }
+        }
+        
     }
     uboTextBlock.fill(TextData);
 }
@@ -173,6 +177,14 @@ void FontRenderer::setColorText(glm::vec4 color, std::string text)
 void FontRenderer::draw()
 {
     mShader->use();
+    
+    mShader->bindBuffer(uboAlphabetBlock.getName().c_str(), uboAlphabetBlock.getBlockBindingIndex());
+    mShader->bindBuffer(uboTextBlock.getName().c_str(), uboTextBlock.getBlockBindingIndex());
+    
+    mShader->setMat4("projection", mProjection);
+    mShader->setMat4("view", mView);
+    mShader->setMat4("model", mModel);
+    mShader->setVec4("TextColor", mColor);
 
     // glm::vec3 offset = glm::vec3(0.0, 0.0, 0.0);
     glEnable(GL_BLEND);
