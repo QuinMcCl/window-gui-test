@@ -3,29 +3,17 @@
 #include <map>
 
 #include "texture.h"
+std::map<GLint, GLuint> Texture::TextureUnitMap;
 
-void TextureManager::cleanup()
+Texture::Texture(std::string filePath) : mTextureID(GL_FALSE), mTextureUnit(GL_FALSE), mSize(glm::ivec2(-1, -1))
 {
-    Texture theTexture;
-    for (std::map<std::string, Texture>::iterator it = allTextures.begin(); it != allTextures.end();)
-    {
-        theTexture = it->second;
-        allTextures.erase(it++);
-        glDeleteTextures(1, &(theTexture.id));
-    }
-}
-
-Texture TextureManager::TextureFromFile(std::string filePath, bool gamma)
-{
-    Texture theTexture = {GL_FALSE, glm::ivec2(0, 0)};
-    unsigned int textureID = GL_FALSE;
 
     int width, height, nrComponents;
     unsigned char *data = stbi_load(filePath.c_str(), &width, &height, &nrComponents, 0);
     if (data)
     {
 
-        glGenTextures(1, &textureID);
+        glGenTextures(1, &mTextureID);
         GLenum format;
         if (nrComponents == 1)
             format = GL_RED;
@@ -34,10 +22,9 @@ Texture TextureManager::TextureFromFile(std::string filePath, bool gamma)
         else if (nrComponents == 4)
             format = GL_RGBA;
 
-        theTexture.id = textureID;
-        theTexture.size = glm::ivec2(width, height);
+        mSize = glm::ivec2(width, height);
 
-        glBindTexture(GL_TEXTURE_2D, textureID);
+        glBindTexture(GL_TEXTURE_2D, mTextureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -53,17 +40,54 @@ Texture TextureManager::TextureFromFile(std::string filePath, bool gamma)
         fprintf(stderr, "\n", filePath);
         stbi_image_free(data);
     }
-
-    return theTexture;
 }
 
-Texture TextureManager::getTexture(std::string filePath, unsigned int type)
+unsigned int Texture::getID()
+{
+    return mTextureID;
+}
+glm::vec2 Texture::getSize()
+{
+    return mSize;
+}
+
+GLint Texture::activate()
+{
+    if (mTextureUnit == GL_FALSE)
+    {
+        GLint MaxTextureImageUnits;
+        glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &MaxTextureImageUnits); // fragment
+        //  glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &MaxVertexTextureImageUnits); // vertex
+        //  glGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &MaxGSGeometryTextureImageUnits); // geometry
+        GLint unitID = 0;
+        for (; unitID < MaxTextureImageUnits; unitID++)
+        {
+            if (TextureUnitMap.find(unitID) == TextureUnitMap.end())
+                break;
+        }
+        if(unitID == MaxTextureImageUnits){
+            //trouble max textures loaded
+        }
+        mTextureUnit = unitID;
+        glActiveTexture(GL_TEXTURE0 + mTextureUnit);
+        glBindTexture(GL_TEXTURE_2D, mTextureID);
+        TextureUnitMap.insert(std::pair<GLint, GLuint>(mTextureUnit, mTextureID));
+    }
+    return mTextureUnit;
+}
+
+void Texture::cleanup()
+{
+    glDeleteTextures(1, &mTextureID);
+}
+
+Texture TextureManager::getTexture(std::string filePath)
 {
     std::map<std::string, Texture>::iterator it = allTextures.find(filePath);
     if (it == allTextures.end())
     {
-        Texture theTexture = TextureFromFile(filePath);
-        if (theTexture.id != GL_FALSE)
+        Texture theTexture = Texture(filePath);
+        if (theTexture.getID() != GL_FALSE)
         {
             std::pair<std::map<std::string, Texture>::iterator, bool> result = allTextures.insert(std::map<std::string, Texture>::value_type(filePath, theTexture));
             if (result.second)
@@ -75,16 +99,23 @@ Texture TextureManager::getTexture(std::string filePath, unsigned int type)
     return it->second;
 }
 
-unsigned int TextureManager::unloadTexture(std::string filePath, unsigned int type)
+unsigned int TextureManager::deleteTexture(std::string filePath)
 {
-    Texture theTexture;
     std::map<std::string, Texture>::iterator it = allTextures.find(filePath);
     if (it != allTextures.end())
     {
-        theTexture = it->second;
+        it->second.cleanup();
         allTextures.erase(it);
-        glDeleteTextures(1, &(theTexture.id));
         return GL_TRUE;
     }
     return GL_FALSE;
+}
+
+void TextureManager::cleanup()
+{
+    for (std::map<std::string, Texture>::iterator it = allTextures.begin(); it != allTextures.end();)
+    {
+        it->second.cleanup();
+        allTextures.erase(it++);
+    }
 }

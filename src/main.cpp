@@ -30,9 +30,6 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
-
-unsigned int uniformBufferedObject::mAllBindingPoints = 0;
-
 int main()
 {
 
@@ -57,14 +54,19 @@ int main()
     Shader instancedFlatShader("../shaders/instanced_flat.vs", "../shaders/instanced_flat.fs");
     Shader fontShader("../shaders/font.vs", "../shaders/font.fs");
 
-
     TextureManager theTextureManager;
 
     stbi_set_flip_vertically_on_load(true);
-    Texture container = theTextureManager.getTexture("../resources/container.jpg", 1);
-    Texture wall = theTextureManager.getTexture("../resources/wall.jpg", 1);
-    Texture ArialAtlas = theTextureManager.getTexture("../fonts/ArialFontAtlas.png", 1);
-    Texture ScriptAtlas = theTextureManager.getTexture("../fonts/scripts.png", 1);
+    Texture container = theTextureManager.getTexture("../resources/container.jpg");
+    Texture wall = theTextureManager.getTexture("../resources/wall.jpg");
+    Texture ArialAtlas = theTextureManager.getTexture("../fonts/ArialFontAtlas.png");
+    Texture ScriptAtlas = theTextureManager.getTexture("../fonts/scripts.png");
+
+    FontType Arial = FontType("../fonts/ArialFontAtlasMeta.csv", &ArialAtlas);
+    FontType Script = FontType("../fonts/scripts.csv", &ScriptAtlas);
+
+    RenderedText ArialRenderer(&Arial, &fontShader);
+    RenderedText ScriptRenderer(&Script, &fontShader);
 
     // world space positions of our cubes
     glm::vec3 cubePositions[] = {
@@ -81,9 +83,6 @@ int main()
 
     InstancedPrimitive Cubes(CUBE, &InstancedCameraShader, &container);
     // Primitive Square(SQUARE, &flatShader, &wall);
-    FontRenderer ArialRenderer("../fonts/ArialFontAtlasMeta.csv", &fontShader, &ArialAtlas);
-    FontRenderer ScriptRenderer("../fonts/scripts.csv", &fontShader, &ScriptAtlas);
-
 
     MainWindow.adopt(&camera);
     MainWindow.adopt(&Cubes);
@@ -91,11 +90,21 @@ int main()
     MainWindow.adopt(&ArialRenderer);
     MainWindow.adopt(&ScriptRenderer);
 
-
     glm::mat4 projection = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 models[] = {glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f),glm::mat4(1.0f)};
+    glm::mat4 models[] = {glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f)};
     glm::mat4 model = glm::mat4(1.0f);
+
+    
+    projection = glm::ortho(0.0f, (float)MainWindow.getWidth(), (float)MainWindow.getHeight(), 0.0f, -1.0f, 1.0f);
+    view = glm::mat4(1.0f);
+    model = glm::mat4(1.0f);
+    model = glm::scale(model, glm::vec3(160.0f, 160.0f, 1.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.5f));
+    ArialRenderer.updateMatricies(model, view, projection);
+    ArialRenderer.setColorText(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), "This is a test");
+    ScriptRenderer.setColorText(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), "abcdefghijklmnopqrstuvwxyz\n1234567890-=[];',./\\\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n!@#$%^&*()_+{}:\"<>?|");
+
 
     // projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
     // view = glm::mat4(1.0f);
@@ -104,8 +113,6 @@ int main()
     // model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     // model = glm::scale(model, glm::vec3(0.25f, 0.25f, 1.0f));
     // Square.updateMatricies(model, view, projection);
-
-
 
     // render loop
     // -----------
@@ -118,7 +125,6 @@ int main()
         lastFrame = currentFrame;
 
         MainWindow.update(deltaTime);
-
 
         projection = glm::perspective(glm::radians(camera.Zoom), (float)MainWindow.getWidth() / (float)MainWindow.getHeight(), 0.1f, 100.0f);
         view = camera.GetViewMatrix();
@@ -134,26 +140,13 @@ int main()
         }
         Cubes.updateMatricies(10, models, view, projection);
 
-
-
         // projection = glm::ortho(0.0f, (float)MainWindow.getWidth(), (float)MainWindow.getHeight(), 0.0f, -1.0f, 1.0f);
         // view = glm::mat4(1.0f);
         model = glm::mat4(1.0f);
         model = glm::scale(model, glm::vec3(1.0f, -1.0f, 1.0f));
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 1.5f));
         ScriptRenderer.updateMatricies(model, view, projection);
-        ScriptRenderer.setColorText(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), "abcdefghijklmnopqrstuvwxyz\n1234567890-=[];',./\\\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n!@#$%^&*()_+{}:\"<>?|");
-
-
-        projection = glm::ortho(0.0f, (float)MainWindow.getWidth(), (float)MainWindow.getHeight(), 0.0f, -1.0f, 1.0f);
-        view = glm::mat4(1.0f);
-        model = glm::mat4(1.0f);
-        model = glm::scale(model, glm::vec3(160.0f, 160.0f, 1.0f));
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.5f));
-        ArialRenderer.updateMatricies(model, view, projection);
-        ArialRenderer.setColorText(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), "This is a test");
-
-
+        
 
         MainWindow.draw();
     }

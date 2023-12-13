@@ -1,10 +1,10 @@
 #include "fonts.h"
 
-FontRenderer::FontRenderer(const char *metaPath, const Shader *shader, Texture *Atlas) : uboAlphabetBlock("uboAlphabetBlock", 96 * sizeof(letterStruct)),
-                                                                                         uboTextBlock("uboTextBlock", 256 * sizeof(charStruct))
+FontType::FontType(const char *metaPath, Texture *Atlas) : mAtlas(Atlas),
+                                                           uboAlphabetBlock("uboAlphabetBlock", LETTERS_PER_ALPHABET * sizeof(letterStruct)),
+                                                           mIndexTable()
 {
-    mShader = shader;
-    mAtlas = Atlas;
+    std::vector<letterStruct> mAlphabetData;
 
     // parse csv
     FILE *fp = fopen(metaPath, "rb");
@@ -73,24 +73,55 @@ FontRenderer::FontRenderer(const char *metaPath, const Shader *shader, Texture *
             if (pch != NULL)
                 return;
 
-            letterStruct line;
-            charStruct thisChar;
+            letterStruct Glyph;
+            charStruct charData;
 
-            thisChar.index = AlphabetData.size();
-            thisChar.Offset = glm::vec3(advance, 0.0, 0.0);
+            charData.index = mAlphabetData.size();
+            charData.Advance = glm::vec3(advance, 0.0f, 0.0f);
 
-            line.charBearing = glm::vec2(charLeft, 1.0f -charTop);
-            line.charSize = glm::vec2(charRight - charLeft, charTop - charBottom);
-            line.textBearing = glm::vec2(atlasLeft, atlasBottom) / mAtlas->size;
-            line.textSize = glm::vec2(atlasRight - atlasLeft, atlasTop - atlasBottom) / mAtlas->size;
+            Glyph.ScreenBearing = glm::vec2(charLeft, 1.0f - charTop);
+            Glyph.ScreenSize = glm::vec2(charRight - charLeft, charTop - charBottom);
+            Glyph.UVBearing = glm::vec2(atlasLeft, atlasBottom) / mAtlas->getSize();
+            Glyph.UVSize = glm::vec2(atlasRight - atlasLeft, atlasTop - atlasBottom) / mAtlas->getSize();
 
-            metaTable.insert(std::pair<char, charStruct>(c, thisChar));
-            AlphabetData.push_back(line);
+            mIndexTable.insert(std::pair<char, charStruct>(c, charData));
+            mAlphabetData.push_back(Glyph);
         }
 
         fclose(fp);
     }
+    // fill the buffer
+    uboAlphabetBlock.fill(&mAlphabetData[0], mAlphabetData.size() * sizeof(letterStruct),0);
+}
 
+Texture *FontType::getTexture()
+{
+    return mAtlas;
+}
+
+charStruct FontType::getChar(char c)
+{
+    std::map<char, charStruct>::iterator tableIt = mIndexTable.find(c);
+    if (tableIt != mIndexTable.end())
+    {
+        return tableIt->second;
+    }
+    return (charStruct){.index = -1};
+}
+
+uniformBufferedObject FontType::getBlock()
+{
+    return uboAlphabetBlock;
+}
+
+void FontType::cleanup(){
+    uboAlphabetBlock.cleanup();
+}
+
+RenderedText::RenderedText(FontType *type, Shader *shader) : uboTextBlock("uboTextBlock", 2048 * sizeof(charStruct)),
+                                                             mType(type),
+                                                             mShader(shader)
+{
     float vertices[6][4] = {
         {0.0f, 0.0f, 0.0f, 1.0f},
         {0.0f, 1.0f, 0.0f, 0.0f},
@@ -114,12 +145,9 @@ FontRenderer::FontRenderer(const char *metaPath, const Shader *shader, Texture *
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-
-    // fill the buffer
-    uboAlphabetBlock.fill<letterStruct>(AlphabetData);
 }
 
-void FontRenderer::cleanup()
+void RenderedText::cleanup()
 {
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
@@ -133,58 +161,62 @@ void FontRenderer::cleanup()
         glDeleteBuffers(1, &VBO);
         VBO = GL_FALSE;
     }
+    uboTextBlock.cleanup();
     glfw_enabled::cleanup();
 }
 
-void FontRenderer::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
+void RenderedText::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
     mModel = model;
     mView = view;
     mProjection = projection;
 }
 
-void FontRenderer::setColorText(glm::vec4 color, std::string text)
+void RenderedText::setColorText(glm::vec4 color, std::string text)
 {
     mText = text;
     mColor = color;
     std::vector<charStruct> TextData;
-    glm::vec3 totalOffset = glm::vec3(0.0, 0.0, 0.0);
+    glm::vec3 CurrentAdvance = glm::vec3(0.0, 0.0, 0.0);
+    glm::vec3 AddAdvance = glm::vec3(0.0, 0.0, 0.0);
+    charStruct thisChar;
+    thisChar.index = -1;
+    thisChar.Advance = glm::vec3(0.0, 0.0, 0.0);
 
     for (std::string::iterator it = text.begin(); it != text.end(); it++)
     {
-        if(*it == '\n')
+        if (*it == '\n')
         {
-            totalOffset.x = 0;
-            totalOffset.y += 1;
+            CurrentAdvance.x = 0;
+            CurrentAdvance.y += 1;
         }
         else
         {
-            std::map<char, charStruct>::iterator tableIt = metaTable.find(*it);
-            if (tableIt != metaTable.end())
+
+            thisChar = mType->getChar(*it);
+            if (thisChar.index != -1)
             {
-                charStruct foundChar = tableIt->second;
-                glm::vec3 addOffset = foundChar.Offset;
-                foundChar.Offset = totalOffset;
-                TextData.push_back(foundChar);
-                totalOffset += addOffset;
+                AddAdvance = thisChar.Advance;
+                thisChar.Advance = CurrentAdvance;
+                TextData.push_back(thisChar);
+                CurrentAdvance += AddAdvance;
             }
         }
-        
     }
-    uboTextBlock.fill(TextData);
+    uboTextBlock.fill(&TextData[0], TextData.size() * sizeof(charStruct), 0);
 }
 
-void FontRenderer::draw()
+void RenderedText::draw()
 {
     mShader->use();
-    
-    mShader->bindBuffer(uboAlphabetBlock.getName().c_str(), uboAlphabetBlock.getBlockBindingIndex());
-    mShader->bindBuffer(uboTextBlock.getName().c_str(), uboTextBlock.getBlockBindingIndex());
-    
+
     mShader->setMat4("projection", mProjection);
     mShader->setMat4("view", mView);
     mShader->setMat4("model", mModel);
     mShader->setVec4("TextColor", mColor);
+    mShader->setInt("texture1", mType->getTexture()->activate());
+    mShader->bindBuffer(mType->getBlock().getName().c_str(), mType->getBlock().getBlockBindingIndex());
+    mShader->bindBuffer(uboTextBlock.getName().c_str(), uboTextBlock.getBlockBindingIndex());
 
     // glm::vec3 offset = glm::vec3(0.0, 0.0, 0.0);
     glEnable(GL_BLEND);
@@ -192,14 +224,11 @@ void FontRenderer::draw()
     glDepthMask(GL_FALSE); // Don't write into the depth buffer
     // glDisable(GL_CULL_FACE);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, mAtlas->id);
     glBindVertexArray(VAO);
 
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, mText.size());
 
     glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
 
     // glEnable(GL_CULL_FACE);
     glDepthMask(GL_TRUE); // Re-enable writing to the depth buffer

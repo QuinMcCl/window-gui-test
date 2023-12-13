@@ -16,14 +16,14 @@ enum primitive_type
 class Primitive : public glfw_enabled
 {
 public:
-    Primitive(primitive_type type, const Shader *shader, const Texture *image);
+    Primitive(primitive_type type, Shader *shader, Texture *image);
     void cleanup();
     void updateMatricies(glm::mat4 mModel, glm::mat4 mView, glm::mat4 mProjection);
     void draw() override;
 
 protected:
-    const Shader *mShader;
-    const Texture *mImage;
+    Shader *mShader;
+    Texture *mImage;
     glm::mat4 mModel;
     glm::mat4 mView;
     glm::mat4 mProjection;

@@ -1,6 +1,10 @@
 #ifndef FONTS_H
 #define FONTS_H
 
+#define MAX_ALPHABETS 16
+#define LETTERS_PER_ALPHABET 128
+
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -18,41 +22,61 @@
 
 struct letterStruct
 {
-    glm::vec2 charSize;
-    glm::vec2 charBearing;
-    glm::vec2 textSize;
-    glm::vec2 textBearing;
+    glm::vec2 ScreenSize;
+    glm::vec2 ScreenBearing;
+    glm::vec2 UVSize;
+    glm::vec2 UVBearing;
 };
 
 struct charStruct
 {
-    unsigned int index;
-    unsigned int pad1;
-    unsigned int pad2;
-    unsigned int pad3;
-    glm::vec3 Offset;
-    unsigned int pad4;
+    int index;
+    int pad1;
+    int pad2;
+    int pad3;
+    glm::vec3 Advance;
+    int pad4;
 };
 
-class FontRenderer : public glfw_enabled
+class FontType
 {
 private:
     Texture *mAtlas;
-
     uniformBufferedObject uboAlphabetBlock;
-    std::vector<letterStruct> AlphabetData;
+    std::map<char, charStruct> mIndexTable;
 
+public:
+    FontType(const char *metaPath, Texture *Atlas);
+    Texture *getTexture();
+    charStruct getChar(char c);
+    uniformBufferedObject getBlock();
+    void cleanup();
+};
+
+class FontString
+{
+private:
+    const FontType &type;
     uniformBufferedObject uboTextBlock;
-    std::map<char, charStruct> metaTable;
+    std::vector<charStruct> TextData;
+
+public:
+};
+
+class RenderedText : public glfw_enabled
+{
+private:
+    FontType * mType;
+    uniformBufferedObject uboTextBlock;
     unsigned int VBO, VAO;
 
-    const Shader *mShader;
+    Shader *mShader;
     glm::mat4 mModel, mView, mProjection;
     std::string mText;
     glm::vec4 mColor;
 
 public:
-    FontRenderer(const char *metaPath, const Shader *shader, Texture *Atlas);
+    RenderedText(FontType *type, Shader *shader);
 
     void cleanup() override;
 

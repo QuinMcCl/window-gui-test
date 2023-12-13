@@ -3,7 +3,7 @@
 #include "types.h"
 #include "instancedPrimitive.h"
 
-InstancedPrimitive::InstancedPrimitive(primitive_type type, const Shader *shader, const Texture *image) : Primitive(type, shader, image)
+InstancedPrimitive::InstancedPrimitive(primitive_type type, Shader *shader, Texture *image) : Primitive(type, shader, image)
 {
 
 }
@@ -23,9 +23,7 @@ void InstancedPrimitive::draw()
     mShader->setMat4("projection", mProjection);
     mShader->setMat4("view", mView);
     mShader->setMat4("model", mModelCount, mModels);
-    mShader->setInt("texture1", 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, mImage->id);
+    mShader->setInt("texture1", mImage->activate());
 
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, mIndeces.size(), GL_UNSIGNED_INT, 0, mModelCount);

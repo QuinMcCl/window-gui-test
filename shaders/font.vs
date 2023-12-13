@@ -25,7 +25,7 @@ struct charStruct
 
 layout(std140) uniform uboAlphabetBlock
 {
-	letterStruct letters[96];
+	letterStruct letters[128];
 }Alphabet;
 
 layout(std140) uniform uboTextBlock

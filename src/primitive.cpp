@@ -85,10 +85,8 @@ std::vector<unsigned int> cube_indeces = {
     10,
 };
 
-Primitive::Primitive(primitive_type type, const Shader *shader, const Texture *image)
+Primitive::Primitive(primitive_type type, Shader *shader, Texture *image) : mShader(shader), mImage(image)
 {
-    mShader = shader;
-    mImage = image;
     switch (type)
     {
     case TRIANGLE:
@@ -128,7 +126,8 @@ Primitive::Primitive(primitive_type type, const Shader *shader, const Texture *i
     glEnableVertexAttribArray(1);
 }
 
-void Primitive::cleanup(){
+void Primitive::cleanup()
+{
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     if (VAO != GL_FALSE)
@@ -163,9 +162,7 @@ void Primitive::draw()
     mShader->setMat4("projection", mProjection);
     mShader->setMat4("view", mView);
     mShader->setMat4("model", mModel);
-    mShader->setInt("texture1", 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, mImage->id);
+    mShader->setInt("texture1", mImage->activate());
 
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, mIndeces.size(), GL_UNSIGNED_INT, 0);

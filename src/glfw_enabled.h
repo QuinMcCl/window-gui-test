@@ -203,45 +203,19 @@ private:
     static unsigned int mAllBindingPoints;
     unsigned int mBindingPoint = GL_FALSE;
     unsigned int uboBlock = GL_FALSE;
+    unsigned int mMaxSize = GL_FALSE;
     std::string mName = " ";
 
 public:
-    uniformBufferedObject(const std::string name, const unsigned int maxSize)
-    {
-        mBindingPoint = mAllBindingPoints++;
-        mName = name;
-        // allocate buffer
-        glGenBuffers(1, &uboBlock);
-        glBindBuffer(GL_UNIFORM_BUFFER, uboBlock);
-        glBufferData(GL_UNIFORM_BUFFER, maxSize, NULL, GL_STATIC_DRAW);
+    uniformBufferedObject(const std::string name, const unsigned int maxCount);
 
-        // bind the buffer
-        glBindBufferBase(GL_UNIFORM_BUFFER, mBindingPoint, uboBlock);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
+    void fill(const void *items, unsigned int size, unsigned int offset);
 
-    template <typename T>
-    void fill(const std::vector<T> items)
-    {
-        // fill the buffer
-        glBindBuffer(GL_UNIFORM_BUFFER, uboBlock);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, items.size() * sizeof(T), &items[0]);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
+    void cleanup();
 
-    ~uniformBufferedObject()
-    {
-        glDeleteBuffers(1, &uboBlock);
-        uboBlock = GL_FALSE;
-    }
-    std::string getName()
-    {
-        return mName;
-    }
-    unsigned int getBlockBindingIndex()
-    {
-        return mBindingPoint;
-    }
+    std::string getName();
+
+    unsigned int getBlockBindingIndex();
 };
 
 #endif
