@@ -71,7 +71,7 @@ private:
     unsigned int VBO, VAO;
 
     Shader *mShader;
-    glm::mat4 mModel, mView, mProjection;
+    glm::mat4 mModel;
     std::string mText;
     glm::vec4 mColor;
 
@@ -80,9 +80,10 @@ public:
 
     void cleanup() override;
 
-    void updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection);
+    void updateModel(glm::mat4 model);
 
-    void setColorText(glm::vec4 color, std::string text);
+    void setColor(glm::vec4 color);
+    void setText(std::string text);
 
     void draw() override;
 };

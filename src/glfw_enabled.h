@@ -204,10 +204,11 @@ private:
     unsigned int mBindingPoint = GL_FALSE;
     unsigned int uboBlock = GL_FALSE;
     unsigned int mMaxSize = GL_FALSE;
+    unsigned int mUsage;
     std::string mName = " ";
 
 public:
-    uniformBufferedObject(const std::string name, const unsigned int maxCount);
+    uniformBufferedObject(const std::string name, const unsigned int maxSize, unsigned int usage);
 
     void fill(const void *items, unsigned int size, unsigned int offset);
 

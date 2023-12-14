@@ -10,13 +10,13 @@
 class InstancedPrimitive : public Primitive
 {
 public:
-    InstancedPrimitive(primitive_type type, Shader * shader, Texture * image);
-    void updateMatricies(unsigned int modelCount, glm::mat4 * models, glm::mat4  mView, glm::mat4 mProjection);
+    InstancedPrimitive(primitive_type type, Shader *shader, Texture *image);
+    void updateModels(unsigned int modelCount, glm::mat4 *models);
     void draw() override;
-private:
-    glm::mat4 * mModels;
-    unsigned int mModelCount;
 
+private:
+    glm::mat4 *mModels;
+    unsigned int mModelCount;
 };
 
 #endif

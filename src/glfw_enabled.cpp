@@ -2,13 +2,13 @@
 
 unsigned int uniformBufferedObject::mAllBindingPoints = 0;
 
-uniformBufferedObject::uniformBufferedObject(const std::string name, const unsigned int maxSize)
-    : mBindingPoint(mAllBindingPoints++), mName(name), mMaxSize(maxSize)
+uniformBufferedObject::uniformBufferedObject(const std::string name, const unsigned int maxSize, unsigned int usage)
+    : mBindingPoint(mAllBindingPoints++), mName(name), mMaxSize(maxSize), mUsage(usage)
 {
     // allocate buffer
     glGenBuffers(1, &uboBlock);
     glBindBuffer(GL_UNIFORM_BUFFER, uboBlock);
-    glBufferData(GL_UNIFORM_BUFFER, mMaxSize, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, mMaxSize, NULL, mUsage);
 
     // bind the buffer
     glBindBufferBase(GL_UNIFORM_BUFFER, mBindingPoint, uboBlock);
@@ -24,7 +24,7 @@ void uniformBufferedObject::fill(const void *items, unsigned int size, unsigned 
         mMaxSize = size + offset;
         glGenBuffers(1, &uboBlock);
         glBindBuffer(GL_UNIFORM_BUFFER, uboBlock);
-        glBufferData(GL_UNIFORM_BUFFER, mMaxSize, NULL, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, mMaxSize, NULL, mUsage);
         glBufferSubData(GL_UNIFORM_BUFFER, offset, size, items);
         glBindBufferBase(GL_UNIFORM_BUFFER, mBindingPoint, uboBlock);
     }

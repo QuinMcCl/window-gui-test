@@ -5,8 +5,11 @@ layout (location = 1) in vec2 aTexCoord;
 out vec2 TexCoord;
 
 uniform mat4 model[16];
-uniform mat4 view;
-uniform mat4 projection;
+layout(std140) uniform uboViewProjection
+{
+	mat4 view;
+	mat4 projection;
+};
 
 void main()
 {

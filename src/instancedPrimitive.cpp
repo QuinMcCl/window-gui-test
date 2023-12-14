@@ -8,11 +8,9 @@ InstancedPrimitive::InstancedPrimitive(primitive_type type, Shader *shader, Text
 
 }
 
-void InstancedPrimitive::updateMatricies(unsigned int modelCount, glm::mat4 models[], glm::mat4 view, glm::mat4 projection)
+void InstancedPrimitive::updateModels(unsigned int modelCount, glm::mat4 models[])
 {
     mModels = models;
-    mView = view;
-    mProjection = projection;
     mModelCount = modelCount;
 }
 
@@ -20,8 +18,6 @@ void InstancedPrimitive::draw()
 {
     // activate shader
     mShader->use();
-    mShader->setMat4("projection", mProjection);
-    mShader->setMat4("view", mView);
     mShader->setMat4("model", mModelCount, mModels);
     mShader->setInt("texture1", mImage->activate());
 

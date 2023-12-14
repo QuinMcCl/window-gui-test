@@ -34,8 +34,11 @@ layout(std140) uniform uboTextBlock
 };
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+layout(std140) uniform uboViewProjection
+{
+	mat4 view;
+	mat4 projection;
+};
 
 // uniform int index;
 // uniform vec3 Offset;

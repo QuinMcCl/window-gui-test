@@ -23,9 +23,6 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
-// camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-
 // timing
 float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
@@ -46,28 +43,62 @@ int main()
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
+    // camera
+    Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+
+    uniformBufferedObject cameraViewProjection = uniformBufferedObject("uboViewProjection", 2 * sizeof(glm::mat4), GL_STREAM_DRAW);
+    uniformBufferedObject screenViewProjection = uniformBufferedObject("uboViewProjection", 2 * sizeof(glm::mat4), GL_STREAM_DRAW);
+
+    glm::mat4 view_projection[2];
+
+    view_projection[0] = camera.GetViewMatrix();
+    view_projection[1] = glm::perspective(glm::radians(camera.Zoom), (float)MainWindow.getWidth() / (float)MainWindow.getHeight(), 0.1f, 100.0f);
+
+    cameraViewProjection.fill(view_projection, 2 * sizeof(glm::mat4), 0);
+
+    view_projection[0] = glm::mat4(1.0f);
+    view_projection[1] = glm::ortho(0.0f, (float)MainWindow.getWidth(), (float)MainWindow.getHeight(), 0.0f, -1.0f, 1.0f);
+
+    screenViewProjection.fill(view_projection, 2 * sizeof(glm::mat4), 0);
+
     // build and compile our shader program
     // ------------------------------------
-    Shader cameraShader("../shaders/camera.vs", "../shaders/camera.fs");
     Shader InstancedCameraShader("../shaders/instanced_camera.vs", "../shaders/instanced_camera.fs");
-    Shader flatShader("../shaders/flat.vs", "../shaders/flat.fs");
-    Shader instancedFlatShader("../shaders/instanced_flat.vs", "../shaders/instanced_flat.fs");
-    Shader fontShader("../shaders/font.vs", "../shaders/font.fs");
+    Shader cameraFontShader("../shaders/font.vs", "../shaders/font.fs");
+    Shader screenFontShader("../shaders/font.vs", "../shaders/font.fs");
 
     TextureManager theTextureManager;
 
     stbi_set_flip_vertically_on_load(true);
     Texture container = theTextureManager.getTexture("../resources/container.jpg");
     Texture wall = theTextureManager.getTexture("../resources/wall.jpg");
-    Texture ArialAtlas = theTextureManager.getTexture("../fonts/ArialFontAtlas.png");
     Texture ScriptAtlas = theTextureManager.getTexture("../fonts/scripts.png");
+    Texture ArialAtlas = theTextureManager.getTexture("../fonts/ArialFontAtlas.png");
 
-    FontType Arial = FontType("../fonts/ArialFontAtlasMeta.csv", &ArialAtlas);
     FontType Script = FontType("../fonts/scripts.csv", &ScriptAtlas);
+    FontType Arial = FontType("../fonts/ArialFontAtlasMeta.csv", &ArialAtlas);
 
-    RenderedText ArialRenderer(&Arial, &fontShader);
-    RenderedText ScriptRenderer(&Script, &fontShader);
+    RenderedText ScriptCameraRenderer(&Script, &cameraFontShader);
+    RenderedText ArialScreenRenderer(&Arial, &screenFontShader);
 
+    InstancedPrimitive Cubes(CUBE, &InstancedCameraShader, &container);
+
+    InstancedCameraShader.use();
+    InstancedCameraShader.bindBuffer(cameraViewProjection.getName().c_str(), cameraViewProjection.getBlockBindingIndex());
+
+    cameraFontShader.use();
+    cameraFontShader.bindBuffer(cameraViewProjection.getName().c_str(), cameraViewProjection.getBlockBindingIndex());
+
+    screenFontShader.use();
+    screenFontShader.bindBuffer(screenViewProjection.getName().c_str(), screenViewProjection.getBlockBindingIndex());
+
+    MainWindow.adopt(&camera);
+    MainWindow.adopt(&Cubes);
+    MainWindow.adopt(&ArialScreenRenderer);
+    MainWindow.adopt(&ScriptCameraRenderer);
+
+    glm::mat4 models[] = {glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f)};
+    glm::mat4 model = glm::mat4(1.0f);
     // world space positions of our cubes
     glm::vec3 cubePositions[] = {
         glm::vec3(0.0f, 0.0f, 0.0f),
@@ -81,38 +112,20 @@ int main()
         glm::vec3(1.5f, 0.2f, -1.5f),
         glm::vec3(-1.3f, 1.0f, -1.5f)};
 
-    InstancedPrimitive Cubes(CUBE, &InstancedCameraShader, &container);
-    // Primitive Square(SQUARE, &flatShader, &wall);
-
-    MainWindow.adopt(&camera);
-    MainWindow.adopt(&Cubes);
-    // MainWindow.adopt(&Square);
-    MainWindow.adopt(&ArialRenderer);
-    MainWindow.adopt(&ScriptRenderer);
-
-    glm::mat4 projection = glm::mat4(1.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 models[] = {glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f)};
-    glm::mat4 model = glm::mat4(1.0f);
-
-    
-    projection = glm::ortho(0.0f, (float)MainWindow.getWidth(), (float)MainWindow.getHeight(), 0.0f, -1.0f, 1.0f);
-    view = glm::mat4(1.0f);
     model = glm::mat4(1.0f);
     model = glm::scale(model, glm::vec3(160.0f, 160.0f, 1.0f));
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.5f));
-    ArialRenderer.updateMatricies(model, view, projection);
-    ArialRenderer.setColorText(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), "This is a test");
-    ScriptRenderer.setColorText(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), "abcdefghijklmnopqrstuvwxyz\n1234567890-=[];',./\\\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n!@#$%^&*()_+{}:\"<>?|");
+    ArialScreenRenderer.updateModel(model);
 
+    model = glm::mat4(1.0f);
+    model = glm::scale(model, glm::vec3(1.0f, -1.0f, 1.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 1.5f));
+    ScriptCameraRenderer.updateModel(model);
 
-    // projection = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
-    // view = glm::mat4(1.0f);
-    // model = glm::mat4(1.0f);
-    // model = glm::translate(model, glm::vec3(-0.125f, 0.0125f, 0.0f));
-    // model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    // model = glm::scale(model, glm::vec3(0.25f, 0.25f, 1.0f));
-    // Square.updateMatricies(model, view, projection);
+    ArialScreenRenderer.setColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ArialScreenRenderer.setText("This is a test");
+    ScriptCameraRenderer.setColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ScriptCameraRenderer.setText("abcdefghijklmnopqrstuvwxyz\n1234567890-=[];',./\\\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n!@#$%^&*()_+{}:\"<>?|");
 
     // render loop
     // -----------
@@ -126,8 +139,18 @@ int main()
 
         MainWindow.update(deltaTime);
 
-        projection = glm::perspective(glm::radians(camera.Zoom), (float)MainWindow.getWidth() / (float)MainWindow.getHeight(), 0.1f, 100.0f);
-        view = camera.GetViewMatrix();
+        glm::mat4 view_projection[2];
+
+        view_projection[0] = camera.GetViewMatrix();
+        view_projection[1] = glm::perspective(glm::radians(camera.Zoom), (float)MainWindow.getWidth() / (float)MainWindow.getHeight(), 0.1f, 100.0f);
+
+        cameraViewProjection.fill(view_projection, 2 * sizeof(glm::mat4), 0);
+
+        view_projection[0] = glm::mat4(1.0f);
+        view_projection[1] = glm::ortho(0.0f, (float)MainWindow.getWidth(), (float)MainWindow.getHeight(), 0.0f, -1.0f, 1.0f);
+
+        screenViewProjection.fill(view_projection, 2 * sizeof(glm::mat4), 0);
+
         for (unsigned int i = 0; i < 10; i++)
         {
             float angle = 20.0f * i * currentFrame;
@@ -138,26 +161,27 @@ int main()
             models[i] = glm::scale(models[i], glm::vec3(0.5f, 0.5f, 0.5f));
             models[i] = glm::translate(models[i], glm::vec3(-1.0f, -1.0f, -1.0f));
         }
-        Cubes.updateMatricies(10, models, view, projection);
+        Cubes.updateModels(10, models);
 
-        // projection = glm::ortho(0.0f, (float)MainWindow.getWidth(), (float)MainWindow.getHeight(), 0.0f, -1.0f, 1.0f);
-        // view = glm::mat4(1.0f);
-        model = glm::mat4(1.0f);
-        model = glm::scale(model, glm::vec3(1.0f, -1.0f, 1.0f));
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 1.5f));
-        ScriptRenderer.updateMatricies(model, view, projection);
-        
+        ArialScreenRenderer.setColor(glm::vec4(
+            glm::sin(glm::radians(20.0f * currentFrame)), 
+            glm::sin(glm::radians(40.0f * currentFrame)), 
+            glm::sin(glm::radians(60.0f * currentFrame)), 
+            1.0f
+            ));
 
         MainWindow.draw();
     }
 
-    MainWindow.cleanup();
     theTextureManager.cleanup();
-    cameraShader.cleanup();
+    Script.cleanup();
+    Arial.cleanup();
     InstancedCameraShader.cleanup();
-    flatShader.cleanup();
-    instancedFlatShader.cleanup();
-    fontShader.cleanup();
+    cameraFontShader.cleanup();
+    screenFontShader.cleanup();
+    screenViewProjection.cleanup();
+    cameraViewProjection.cleanup();
+    MainWindow.cleanup();
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------

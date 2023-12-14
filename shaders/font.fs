@@ -27,6 +27,8 @@ void main()
     // Weight between inside and outside (anti-aliasing)
     float w = clamp(d/fwidth(d) + 0.5, 0.0, 1.0);
     // Combining the background and foreground color
+    if(w < 0.5)
+        discard;
     FragColor = mix(outsideColor, TextColor, w);
 
     // FragColor = vec4(texture2D(texture1, TexCoord).rgb, 1.0);

@@ -1,7 +1,7 @@
 #include "fonts.h"
 
 FontType::FontType(const char *metaPath, Texture *Atlas) : mAtlas(Atlas),
-                                                           uboAlphabetBlock("uboAlphabetBlock", LETTERS_PER_ALPHABET * sizeof(letterStruct)),
+                                                           uboAlphabetBlock("uboAlphabetBlock", LETTERS_PER_ALPHABET * sizeof(letterStruct), GL_STATIC_DRAW),
                                                            mIndexTable()
 {
     std::vector<letterStruct> mAlphabetData;
@@ -91,7 +91,7 @@ FontType::FontType(const char *metaPath, Texture *Atlas) : mAtlas(Atlas),
         fclose(fp);
     }
     // fill the buffer
-    uboAlphabetBlock.fill(&mAlphabetData[0], mAlphabetData.size() * sizeof(letterStruct),0);
+    uboAlphabetBlock.fill(&mAlphabetData[0], mAlphabetData.size() * sizeof(letterStruct), 0);
 }
 
 Texture *FontType::getTexture()
@@ -114,13 +114,14 @@ uniformBufferedObject FontType::getBlock()
     return uboAlphabetBlock;
 }
 
-void FontType::cleanup(){
+void FontType::cleanup()
+{
     uboAlphabetBlock.cleanup();
 }
 
-RenderedText::RenderedText(FontType *type, Shader *shader) : uboTextBlock("uboTextBlock", 2048 * sizeof(charStruct)),
-                                                             mType(type),
-                                                             mShader(shader)
+RenderedText::RenderedText(FontType *type, Shader *shader) : uboTextBlock("uboTextBlock", 2048 * sizeof(charStruct), GL_STREAM_DRAW),
+                                                                                                    mType(type),
+                                                                                                    mShader(shader)
 {
     float vertices[6][4] = {
         {0.0f, 0.0f, 0.0f, 1.0f},
@@ -165,17 +166,18 @@ void RenderedText::cleanup()
     glfw_enabled::cleanup();
 }
 
-void RenderedText::updateMatricies(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
+void RenderedText::updateModel(glm::mat4 model)
 {
     mModel = model;
-    mView = view;
-    mProjection = projection;
 }
 
-void RenderedText::setColorText(glm::vec4 color, std::string text)
+void RenderedText::setColor(glm::vec4 color){
+    mColor = color;
+}
+
+void RenderedText::setText(std::string text)
 {
     mText = text;
-    mColor = color;
     std::vector<charStruct> TextData;
     glm::vec3 CurrentAdvance = glm::vec3(0.0, 0.0, 0.0);
     glm::vec3 AddAdvance = glm::vec3(0.0, 0.0, 0.0);
@@ -209,9 +211,6 @@ void RenderedText::setColorText(glm::vec4 color, std::string text)
 void RenderedText::draw()
 {
     mShader->use();
-
-    mShader->setMat4("projection", mProjection);
-    mShader->setMat4("view", mView);
     mShader->setMat4("model", mModel);
     mShader->setVec4("TextColor", mColor);
     mShader->setInt("texture1", mType->getTexture()->activate());
@@ -221,7 +220,7 @@ void RenderedText::draw()
     // glm::vec3 offset = glm::vec3(0.0, 0.0, 0.0);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDepthMask(GL_FALSE); // Don't write into the depth buffer
+    // glDepthMask(GL_FALSE); // Don't write into the depth buffer
     // glDisable(GL_CULL_FACE);
 
     glBindVertexArray(VAO);
@@ -231,6 +230,6 @@ void RenderedText::draw()
     glBindVertexArray(0);
 
     // glEnable(GL_CULL_FACE);
-    glDepthMask(GL_TRUE); // Re-enable writing to the depth buffer
+    // glDepthMask(GL_TRUE); // Re-enable writing to the depth buffer
     glDisable(GL_BLEND);
 }
