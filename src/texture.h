@@ -28,7 +28,7 @@ class TextureManager
 {
 public:
     void cleanup();
-    Texture getTexture(std::string filePath);
+    Texture * getTexture(std::string filePath);
     unsigned int deleteTexture(std::string filePath);
 
 private:

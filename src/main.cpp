@@ -11,9 +11,12 @@
 
 #include "shader.h"
 #include "texture.h"
+
+
 #include "window.h"
 #include "camera.h"
 #include "primitive.h"
+#include "gl_ubo.h"
 #include "instancedPrimitive.h"
 #include "fonts.h"
 
@@ -70,18 +73,13 @@ int main()
     TextureManager theTextureManager;
 
     stbi_set_flip_vertically_on_load(true);
-    Texture container = theTextureManager.getTexture("../resources/container.jpg");
-    Texture wall = theTextureManager.getTexture("../resources/wall.jpg");
-    Texture ScriptAtlas = theTextureManager.getTexture("../fonts/scripts.png");
-    Texture ArialAtlas = theTextureManager.getTexture("../fonts/ArialFontAtlas.png");
-
-    FontType Script = FontType("../fonts/scripts.csv", &ScriptAtlas);
-    FontType Arial = FontType("../fonts/ArialFontAtlasMeta.csv", &ArialAtlas);
+    InstancedPrimitive Cubes(CUBE, &InstancedCameraShader, theTextureManager.getTexture("../resources/container.jpg"));
+    FontType Script = FontType("../fonts/scripts.csv", theTextureManager.getTexture("../fonts/scripts.png"));
+    FontType Arial = FontType("../fonts/ArialFontAtlasMeta.csv", theTextureManager.getTexture("../fonts/ArialFontAtlas.png"));
 
     RenderedText ScriptCameraRenderer(&Script, &cameraFontShader);
     RenderedText ArialScreenRenderer(&Arial, &screenFontShader);
 
-    InstancedPrimitive Cubes(CUBE, &InstancedCameraShader, &container);
 
     InstancedCameraShader.use();
     InstancedCameraShader.bindBuffer(cameraViewProjection.getName().c_str(), cameraViewProjection.getBlockBindingIndex());

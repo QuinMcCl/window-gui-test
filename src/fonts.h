@@ -18,6 +18,7 @@
 
 #include "texture.h"
 #include "shader.h"
+#include "gl_ubo.h"
 #include "glfw_enabled.h"
 
 struct letterStruct

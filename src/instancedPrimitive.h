@@ -4,7 +4,7 @@
 #include "shader.h"
 #include "texture.h"
 #include "glfw_enabled.h"
-#include "types.h"
+
 #include "primitive.h"
 
 class InstancedPrimitive : public Primitive

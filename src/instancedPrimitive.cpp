@@ -1,6 +1,6 @@
 #include "texture.h"
 #include "shader.h"
-#include "types.h"
+
 #include "instancedPrimitive.h"
 
 InstancedPrimitive::InstancedPrimitive(primitive_type type, Shader *shader, Texture *image) : Primitive(type, shader, image)

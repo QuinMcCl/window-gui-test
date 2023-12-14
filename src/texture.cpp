@@ -65,8 +65,9 @@ GLint Texture::activate()
             if (TextureUnitMap.find(unitID) == TextureUnitMap.end())
                 break;
         }
-        if(unitID == MaxTextureImageUnits){
-            //trouble max textures loaded
+        if (unitID == MaxTextureImageUnits)
+        {
+            // trouble max textures loaded
         }
         mTextureUnit = unitID;
         glActiveTexture(GL_TEXTURE0 + mTextureUnit);
@@ -81,7 +82,7 @@ void Texture::cleanup()
     glDeleteTextures(1, &mTextureID);
 }
 
-Texture TextureManager::getTexture(std::string filePath)
+Texture *TextureManager::getTexture(std::string filePath)
 {
     std::map<std::string, Texture>::iterator it = allTextures.find(filePath);
     if (it == allTextures.end())
@@ -96,7 +97,7 @@ Texture TextureManager::getTexture(std::string filePath)
             }
         }
     }
-    return it->second;
+    return &(it->second);
 }
 
 unsigned int TextureManager::deleteTexture(std::string filePath)

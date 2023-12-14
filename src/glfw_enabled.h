@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #include <string>
 
@@ -154,69 +155,12 @@ private:
     std::vector<glfw_enabled *> children;
 
 public:
-    virtual void adopt(glfw_enabled *child)
-    {
-        this->children.push_back(child);
-    }
-
-    virtual glfw_enabled *orphan(glfw_enabled *child)
-    {
-        std::vector<glfw_enabled *>::iterator it = std::find(this->children.begin(), this->children.end(), child);
-        if (it != this->children.end())
-        {
-            children.erase(it);
-            return child;
-        }
-        return NULL;
-    }
-
-    virtual void cleanup()
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->cleanup();
-    }
-
-    virtual void update(float dt)
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->update(dt);
-    }
-
-    virtual void draw()
-    {
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
-            (*c)->draw();
-    }
-
-    virtual bool handleEvent(GLFW_EVENT event)
-    {
-        bool stop = false;
-        for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); !stop && c != this->children.end(); ++c)
-            stop |= (*c)->handleEvent(event);
-        return stop;
-    };
-};
-
-class uniformBufferedObject
-{
-private:
-    static unsigned int mAllBindingPoints;
-    unsigned int mBindingPoint = GL_FALSE;
-    unsigned int uboBlock = GL_FALSE;
-    unsigned int mMaxSize = GL_FALSE;
-    unsigned int mUsage;
-    std::string mName = " ";
-
-public:
-    uniformBufferedObject(const std::string name, const unsigned int maxSize, unsigned int usage);
-
-    void fill(const void *items, unsigned int size, unsigned int offset);
-
-    void cleanup();
-
-    std::string getName();
-
-    unsigned int getBlockBindingIndex();
+    virtual void adopt(glfw_enabled *child);
+    virtual glfw_enabled *orphan(glfw_enabled *child);
+    virtual void cleanup();
+    virtual void update(float dt);
+    virtual void draw();
+    virtual bool handleEvent(GLFW_EVENT event);
 };
 
 #endif

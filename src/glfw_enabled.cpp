@@ -1,52 +1,43 @@
 #include "glfw_enabled.h"
 
-unsigned int uniformBufferedObject::mAllBindingPoints = 0;
-
-uniformBufferedObject::uniformBufferedObject(const std::string name, const unsigned int maxSize, unsigned int usage)
-    : mBindingPoint(mAllBindingPoints++), mName(name), mMaxSize(maxSize), mUsage(usage)
+void glfw_enabled::adopt(glfw_enabled *child)
 {
-    // allocate buffer
-    glGenBuffers(1, &uboBlock);
-    glBindBuffer(GL_UNIFORM_BUFFER, uboBlock);
-    glBufferData(GL_UNIFORM_BUFFER, mMaxSize, NULL, mUsage);
-
-    // bind the buffer
-    glBindBufferBase(GL_UNIFORM_BUFFER, mBindingPoint, uboBlock);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    this->children.push_back(child);
 }
 
-void uniformBufferedObject::fill(const void *items, unsigned int size, unsigned int offset)
+glfw_enabled *glfw_enabled::orphan(glfw_enabled *child)
 {
-    if (size + offset > mMaxSize)
+    std::vector<glfw_enabled *>::iterator it = std::find(this->children.begin(), this->children.end(), child);
+    if (it != this->children.end())
     {
-        glDeleteBuffers(1, &uboBlock);
-        uboBlock = GL_FALSE;
-        mMaxSize = size + offset;
-        glGenBuffers(1, &uboBlock);
-        glBindBuffer(GL_UNIFORM_BUFFER, uboBlock);
-        glBufferData(GL_UNIFORM_BUFFER, mMaxSize, NULL, mUsage);
-        glBufferSubData(GL_UNIFORM_BUFFER, offset, size, items);
-        glBindBufferBase(GL_UNIFORM_BUFFER, mBindingPoint, uboBlock);
+        children.erase(it);
+        return child;
     }
-    else
-    {
-        // fill the buffer
-        glBindBuffer(GL_UNIFORM_BUFFER, uboBlock);
-        glBufferSubData(GL_UNIFORM_BUFFER, offset, size, items);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
+    return NULL;
 }
 
-void uniformBufferedObject::cleanup()
+void glfw_enabled::cleanup()
 {
-    glDeleteBuffers(1, &uboBlock);
-    uboBlock = GL_FALSE;
+    for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
+        (*c)->cleanup();
 }
-std::string uniformBufferedObject::getName()
+
+void glfw_enabled::update(float dt)
 {
-    return mName;
+    for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
+        (*c)->update(dt);
 }
-unsigned int uniformBufferedObject::getBlockBindingIndex()
+
+void glfw_enabled::draw()
 {
-    return mBindingPoint;
+    for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); c != this->children.end(); ++c)
+        (*c)->draw();
 }
+
+bool glfw_enabled::handleEvent(GLFW_EVENT event)
+{
+    bool stop = false;
+    for (std::vector<glfw_enabled *>::iterator c = this->children.begin(); !stop && c != this->children.end(); ++c)
+        stop |= (*c)->handleEvent(event);
+    return stop;
+};

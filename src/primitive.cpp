@@ -1,7 +1,8 @@
-#include "primitive.h"
 #include "texture.h"
 #include "shader.h"
-#include "types.h"
+
+#include "primitive.h"
+
 
 std::vector<Vertex> triangle_vertices = {
     Vertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
