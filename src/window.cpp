@@ -56,7 +56,7 @@ Window::Window(unsigned int width, unsigned int height, const char *title)
    //  glfwSetInputMode(thisWindow, GLFW_STICKY_KEYS, GLFW_TRUE);
 
    glfwSetCharCallback(thisWindow, [](GLFWwindow *window, unsigned int codepoint) -> void
-                       { windowCallback(window, {.Type = CHAR, .mChar = {.codepoint = codepoint}}); });
+                       { windowCallback(window, (GLFW_EVENT){.Type = CHAR, .mChar = {.codepoint = codepoint}}); });
 
    glfwSetCharModsCallback(thisWindow, [](GLFWwindow *window, unsigned int codepoint, int mods) -> void
                            { windowCallback(window, (GLFW_EVENT){.Type = CHARMOD, .mCharMod = {.codepoint = codepoint, .mods = mods}}); });
