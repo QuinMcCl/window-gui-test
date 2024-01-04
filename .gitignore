@@ -1,2 +1,5 @@
-/.vscode
-/build
+bin/
+obj/
+unused/
+.vscode/
+imgui.ini
