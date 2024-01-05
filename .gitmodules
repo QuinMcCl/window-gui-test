@@ -11,3 +11,6 @@
 [submodule "external/cglm"]
 	path = external/cglm
 	url = https://github.com/recp/cglm.git
+[submodule "external/nonstd_imgui"]
+	path = external/nonstd_imgui
+	url = https://github.com/QuinMcCl/nonstd_imgui.git

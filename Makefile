@@ -1,7 +1,7 @@
 LIB_DIR = $(PWD)/external
-DEPS = nonstd nonstd_glfw_opengl 
-LIB_DIRS =     $(foreach d, $(DEPS), $(LIB_DIR)/$d)  $(LIB_DIR)/imgui
-LIB_INCLUDES = $(foreach d, $(DEPS), $(LIB_DIR)/$d/include) $(PWD)/include $(LIB_DIR)/imgui $(LIB_DIR)/imgui/backends
+DEPS = nonstd nonstd_glfw_opengl nonstd_imgui
+LIB_DIRS =     $(foreach d, $(DEPS), $(LIB_DIR)/$d)
+LIB_INCLUDES = $(foreach d, $(DEPS), $(LIB_DIR)/$d/include)
 
 LIBSCLEAN=$(addsuffix clean,$(LIB_DIRS))
 LIBSfCLEAN=$(addsuffix fclean,$(LIB_DIRS))
@@ -15,24 +15,24 @@ OBJ_DIR = obj
 BIN_DIR = bin
 
 EXE = $(BIN_DIR)/$(EXE_NAME)
-SRC = $(wildcard $(SRC_DIR)/*.cpp )
-OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+SRC = $(wildcard $(SRC_DIR)/*.c )
+OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 
 export CPPFLAGS = -Iinclude -MMD -MP -Ofast -DERROR_CHECKING
 CFLAGS   = -Wall -Wextra -Werror -g
 LDFLAGS  = $(foreach d, $(LIB_DIRS), -L $d/bin)
-LDLIBS   = $(foreach d, $(DEPS), -l$d) -lpthread -lglfw -lGLEW -lm -limgui
+LDLIBS   = $(foreach d, $(DEPS), -l$d) -lpthread -lGL -lglfw -lGLEW -lm
 INCLUDES = $(foreach d, $(LIB_INCLUDES), -I$d)
 
 .PHONY: all clean  fclean re
 all: $(LIBSALL) $(EXE) 
 
 $(EXE): $(OBJ) | $(BIN_DIR)
-	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@ $(INCLUDES)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@ $(INCLUDES)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp  | $(OBJ_DIR)
-	$(CXX) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c $< -o $@ 
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c  | $(OBJ_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) -c $< -o $@ 
 
 $(BIN_DIR) $(OBJ_DIR):
 	mkdir -p $@

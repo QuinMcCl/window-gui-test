@@ -9,7 +9,7 @@
 
 #include <nonstd.h>
 
-// #include "renderer.h"
+#include "renderer.h"
 
 void *backgroundThread(void *args);
 
@@ -20,24 +20,24 @@ int main()
 
 
     // arraylist_test();
-    hashmap_test();
+    // hashmap_test();
     // tripplebuffer_tests();
 
 
-    // tripplebuffer_t window_test_tripplebuffer;
-    // memset(&window_test_tripplebuffer, 0, sizeof(tripplebuffer_t));
-    // tripplebuffer_alloc(&window_test_tripplebuffer, 1, sizeof(double));
+    tripplebuffer_t window_test_tripplebuffer;
+    memset(&window_test_tripplebuffer, 0, sizeof(tripplebuffer_t));
+    tripplebuffer_alloc(&window_test_tripplebuffer, 1, sizeof(double));
 
-    // pthread_t backThread;
-    // pthread_create(&backThread, NULL, backgroundThread, &window_test_tripplebuffer);
+    pthread_t backThread;
+    pthread_create(&backThread, NULL, backgroundThread, &window_test_tripplebuffer);
 
-    // pthread_t frontThread;
-    // pthread_create(&frontThread, NULL, foregroundThread, &window_test_tripplebuffer);
+    pthread_t frontThread;
+    pthread_create(&frontThread, NULL, foregroundThread, &window_test_tripplebuffer);
 
-    // pthread_join(backThread, NULL);
-    // pthread_join(frontThread, NULL);
+    pthread_join(backThread, NULL);
+    pthread_join(frontThread, NULL);
 
-    // tripplebuffer_free(&window_test_tripplebuffer);
+    tripplebuffer_free(&window_test_tripplebuffer);
 
     return 0;
 }
