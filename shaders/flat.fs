@@ -4,11 +4,13 @@ out vec4 FragColor;
 in vec2 TexCoord;
 
 // texture samplers
-uniform sampler2D texture1;
+uniform Material
+{
+    sampler2D Diffuse[8];
+};
 
 void main()
 {
-	// linearly interpolate between both textures (80% container, 20% awesomeface)
-	FragColor = texture(texture1, TexCoord);
+	FragColor = texture(Material.Diffuse[0], TexCoord);
 }
 

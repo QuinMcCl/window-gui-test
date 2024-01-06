@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 
 #include <nonstd.h>
 #include <nonstd_glfw_opengl.h>
@@ -16,11 +17,11 @@ void *foregroundThread(void *args)
     nonstd_glfw_window_t main_window;
     nonstd_imgui_t gui;
 
-    struct timespec ts;
+    struct timespec lastframe;
+    struct timespec currentFrame;
     tripplebuffer_t *tripplebuffer = (tripplebuffer_t *)args;
 
     // Our state
-    double dt = 1.0 / 60.0;
 
     double h = 0.0;
     double c = 1.0;
@@ -43,8 +44,15 @@ void *foregroundThread(void *args)
     current_state = RUN;
     set_current_state(&current_state);
 
+    clock_gettime(CLOCK_MONOTONIC, &lastframe);
+
     while (current_state != STOP && !gui.options.file_options.should_close)
     {
+
+        clock_gettime(CLOCK_MONOTONIC, &currentFrame);
+        double deltaTime = (double)(currentFrame.tv_sec - lastframe.tv_sec) + ((double)(currentFrame.tv_nsec - lastframe.tv_nsec) * 1.0E9);
+        lastframe = currentFrame;
+
         glfwPollEvents();
         tripplebuffer_swap_front(tripplebuffer);
         tripplebuffer_cpy_out_front((void *)&h, tripplebuffer, 0, 1);
@@ -92,17 +100,14 @@ void *foregroundThread(void *args)
             nonstd_glfw_window_set_clear_color(&main_window, red, green, blue, 1.0f);
         }
 
+        main_window.base.update(&main_window, deltaTime);
+
         // draw
         main_window.base.draw(&main_window);
         // swap
         nonstd_glfw_window_swap(&main_window);
 
         get_current_state(&current_state);
-
-        ts.tv_sec = 0l;
-        ts.tv_nsec = (long)(dt * 1.0E9);
-        while (nanosleep(&ts, &ts))
-            ;
     }
 
     current_state = STOP;
