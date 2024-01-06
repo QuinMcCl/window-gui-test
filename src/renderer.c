@@ -12,17 +12,15 @@ void *foregroundThread(void *args)
     program_state_t current_state = INVALID_STATE;
     get_current_state(&current_state);
 
-    nonstd_glfw_t imgui_handle_blocker;
     nonstd_glfw_window_t tmp_window;
     nonstd_glfw_window_t main_window;
+    nonstd_imgui_t gui;
 
     struct timespec ts;
     tripplebuffer_t *tripplebuffer = (tripplebuffer_t *)args;
 
     // Our state
     double dt = 1.0 / 60.0;
-
-    imgui_main_menu_options_t main_menu_options;
 
     double h = 0.0;
     double c = 1.0;
@@ -31,37 +29,25 @@ void *foregroundThread(void *args)
 
     float red, green, blue;
 
-    // init imgui_handle_blocker
-    {
-        imgui_handle_blocker.update = nonstd_glfw_update;
-        imgui_handle_blocker.draw = nonstd_glfw_draw;
-        imgui_handle_blocker.cleanup = nonstd_glfw_cleanup;
-        imgui_handle_blocker.event_handler = nonstd_imgui_event_blocker;
-        imgui_handle_blocker.sibling = NULL;
-        imgui_handle_blocker.child = NULL;
-    }
-
     nonstd_glfw_window_init(&tmp_window, 100, 100, "tmp_window", 0.0f, 0.0f, 0.0f, 1.0f);
     nonstd_glfw_window_cleanup(&tmp_window);
     nonstd_glfw_window_init(&main_window, 1920, 1080, "MainWindow", 0.0f, 0.0f, 0.0f, 1.0f);
 
-    nonstd_glfw_adopt(&imgui_handle_blocker, (nonstd_glfw_t *)&main_window);
-
-    glfwSetWindowUserPointer(main_window.window, &imgui_handle_blocker);
+    glfwSetWindowUserPointer(main_window.window, &main_window);
     install_callbacks(main_window.window);
 
     // start imgui
-    nonstd_imgui_init(main_window.window);
+    nonstd_imgui_init(&gui, main_window.window);
+    nonstd_glfw_adopt((nonstd_glfw_t *)&main_window, (nonstd_glfw_t *)&gui);
 
     current_state = RUN;
     set_current_state(&current_state);
 
-    while (current_state != STOP)
+    while (current_state != STOP && !gui.options.file_options.should_close)
     {
         glfwPollEvents();
         tripplebuffer_swap_front(tripplebuffer);
         tripplebuffer_cpy_out_front((void *)&h, tripplebuffer, 0, 1);
-        nonstd_glfw_window_get_should_close(&main_window, (int *)&(main_menu_options.file_options.should_close));
 
         // color update
         {
@@ -103,31 +89,11 @@ void *foregroundThread(void *args)
                 green = m;
                 blue = m + x;
             }
-        }
-
-        // new imgui frame
-        nonstd_imgui_start_frame();
-
-        // my draw calls
-        {
             nonstd_glfw_window_set_clear_color(&main_window, red, green, blue, 1.0f);
-            nonstd_glfw_window_draw(&main_window);
         }
 
-        // imgui draw calls
-        {
-            if (main_menu_options.file_options.should_close)
-            {
-                ShowClosePopUp(&(main_menu_options.file_options), &current_state);
-                nonstd_glfw_window_set_should_close(&main_window, (int *)&(main_menu_options.file_options.should_close));
-                set_current_state(&current_state);
-            }
-            ShowMainMenu(&main_menu_options);
-        }
-
-        // end imgui frame
-        nonstd_imgui_end_frame();
-
+        // draw
+        main_window.base.draw(&main_window);
         // swap
         nonstd_glfw_window_swap(&main_window);
 
@@ -139,7 +105,8 @@ void *foregroundThread(void *args)
             ;
     }
 
-    nonstd_imgui_cleanup();
+    current_state = STOP;
+    set_current_state(&current_state);
 
     nonstd_glfw_window_cleanup(&main_window);
     glfwTerminate();
