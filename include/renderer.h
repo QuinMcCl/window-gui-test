@@ -6,7 +6,7 @@ extern "C"
 {
 #endif
 
-void *foregroundThread(void *args);
+void *RenderThread(void *args);
 
 #ifdef __cplusplus
 } /* extern "C" */
