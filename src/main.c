@@ -22,7 +22,6 @@ int main()
     // hashmap_test();
     // tripplebuffer_tests();
 
-
     // tripplebuffer_t window_test_tripplebuffer;
     // memset(&window_test_tripplebuffer, 0, sizeof(tripplebuffer_t));
     // tripplebuffer_alloc(&window_test_tripplebuffer, 1, sizeof(double));

@@ -3,11 +3,14 @@ out vec4 FragColor;
 
 in vec2 TexCoord;
 
-// texture samplers
-uniform Material
+//structs
+struct Material_s
 {
     sampler2D Diffuse[8];
 };
+
+// texture samplers
+uniform Material_s Material;
 
 void main()
 {

@@ -15,7 +15,6 @@ window_t main_window;
 nonstd_imgui_t gui;
 program_state_t current_state = INVALID_STATE;
 
-
 GLFWwindowclosefun old_GLFWwindowclosecallback;
 GLFWframebuffersizefun old_framebuffersizecallback;
 void windowclosefun(GLFWwindow *window);
@@ -34,16 +33,25 @@ void *RenderThread(void *args)
     old_framebuffersizecallback = glfwSetFramebufferSizeCallback(main_window.window, framebuffersizefun);
 
     CHECK(texture_unit_freelist_alloc(), pthread_exit(args));
-    CHECK(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT),  pthread_exit(args));
+    CHECK(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT), pthread_exit(args));
     CHECK(nonstd_opengl_ubo_bindingpoints_alloc(), pthread_exit(args));
 
     // start imgui
     CHECK(imgui_init(&gui, main_window.window), pthread_exit(args));
 
+    shader_t shader;
+    memset(&shader, 0, sizeof(shader_t));
+    CHECK(shader_init(&shader, "./shaders/flat.vs", "./shaders/flat.fs"), pthread_exit(args));
 
+    camera_t camera;
+    memset(&camera, 0, sizeof(camera_t));
+    vec3 camera_pos = {0.0f, 0.0f, 0.0f};
+    vec3 world_up = {0.0f, 1.0f, 0.0f};
+    CHECK(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), pthread_exit(args));
 
-    
-
+    model_t vamp;
+    memset(&vamp, 0, sizeof(model_t));
+    CHECK(model_alloc(&vamp, &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), pthread_exit(args));
 
     current_state = RUN;
     CHECK(set_current_state(&current_state), pthread_exit(args));
@@ -58,9 +66,10 @@ void *RenderThread(void *args)
         window_clear(&main_window);
 
         // draw
+        CHECK(model_draw(&vamp), pthread_exit(args));
 
         // guidraw
-        imgui_draw(&gui);
+        CHECK(imgui_draw(&gui), pthread_exit(args));
 
         // swap
         window_swap(&main_window);
@@ -73,18 +82,17 @@ void *RenderThread(void *args)
 
     window_cleanup(&main_window);
 
-    
+    CHECK(model_free(&vamp), pthread_exit(args));
+    CHECK(camera_free(&camera), pthread_exit(args));
+    CHECK(shader_free(&shader), pthread_exit(args));
+
     CHECK(nonstd_opengl_ubo_bindingpoints_free(), pthread_exit(args));
     CHECK(loaded_textures_free(), pthread_exit(args));
     CHECK(texture_unit_freelist_free(), pthread_exit(args));
 
-
-
     glfwTerminate();
     pthread_exit(args);
 }
-
-
 
 void windowclosefun(GLFWwindow *window)
 {
