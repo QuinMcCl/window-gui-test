@@ -63,13 +63,15 @@ void *RenderThread(void *args)
         // double deltaTime = (double)(currentFrame.tv_sec - lastframe.tv_sec) + ((double)(currentFrame.tv_nsec - lastframe.tv_nsec) * 1.0E9);
         // lastframe = currentFrame;
 
+        camera_update_view_projection(&camera);
+
         window_clear(&main_window);
 
         // draw
         CHECK(model_draw(&vamp), pthread_exit(args));
 
         // guidraw
-        CHECK(imgui_draw(&gui), pthread_exit(args));
+        CHECK(imgui_draw(&gui, 1, &camera, 1, &vamp), pthread_exit(args));
 
         // swap
         window_swap(&main_window);
