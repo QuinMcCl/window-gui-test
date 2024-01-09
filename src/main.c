@@ -31,6 +31,7 @@ int main()
 
     pthread_t frontThread;
     pthread_create(&frontThread, NULL, RenderThread, NULL);
+    // RenderThread(NULL);
 
     // pthread_join(backThread, NULL);
     pthread_join(frontThread, NULL);
