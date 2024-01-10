@@ -184,6 +184,7 @@ void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods)
                 else
                 {
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                    glfwGetCursorPos(window, &lastX, &lastY);
                 }
             }
             break;

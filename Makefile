@@ -18,11 +18,12 @@ EXE = $(BIN_DIR)/$(EXE_NAME)
 SRC = $(wildcard $(SRC_DIR)/*.c )
 OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
+export GLEW_NO_GLU = -DGLEW_NO_GLU
 export PYTHON ?= python3
-export CPPFLAGS = -Iinclude -MMD -MP -Ofast -DERROR_CHECKING
+export CPPFLAGS = -Iinclude -MMD -MP -Ofast -DERROR_CHECKING -DGLEW_NO_GLU
 CFLAGS   = -Wall -Wextra -Werror -g
 LDFLAGS  = $(foreach d, $(LIB_DIRS), -L $d/lib)
-LDLIBS   = $(foreach d, $(DEPS), -l$d) -lpthread -lGL -lGLEW -lglfw -lm
+LDLIBS   = $(foreach d, $(DEPS), -l$d) -lpthread -lGL -l:libGLEW.a -lglfw -lm
 INCLUDES = $(foreach d, $(LIB_INCLUDES), -I$d)
 
 .PHONY: all clean  fclean re
