@@ -16,6 +16,37 @@ nonstd_imgui_t gui;
 camera_t camera;
 program_state_t current_state = INVALID_STATE;
 
+int inputs[GLFW_KEY_LAST + 1];
+
+typedef enum movement_directions_e
+{
+    FORWARD,
+    BACKWARD,
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN,
+    NUM_MOVEMENT_DIRECTIONS
+} movement_directions_t;
+
+int imputMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
+    GLFW_KEY_W,
+    GLFW_KEY_S,
+    GLFW_KEY_A,
+    GLFW_KEY_D,
+    GLFW_KEY_SPACE,
+    GLFW_KEY_LEFT_CONTROL,
+};
+
+vec3 vecMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
+    ((vec3){0.0f, 0.0f, -1.0f}),
+    ((vec3){0.0f, 0.0f, 1.0f}),
+    ((vec3){-1.0f, 0.0f, 0.0f}),
+    ((vec3){1.0f, 0.0f, 0.0f}),
+    ((vec3){0.0f, 1.0f, 0.0f}),
+    ((vec3){0.0f, -1.0f, 0.0f}),
+};
+
 double lastX = 0.0;
 double lastY = 0.0;
 
@@ -29,53 +60,67 @@ void framebuffersizefun(GLFWwindow *window, int width, int height);
 void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods);
 void cursorposfun(GLFWwindow *window, double xpos, double ypos);
 
+void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1]);
+
 void *RenderThread(void *args)
 {
-    CHECK(get_current_state(&current_state), pthread_exit(args));
-
-    struct timespec start_time;
-    struct timespec end_time;
-    // tripplebuffer_t *tripplebuffer = (tripplebuffer_t *)args;
-
-    CHECK(window_init(&main_window, 1920, 1080, "MainWindow", 0.3f, 0.3f, 0.3f, 1.0f), pthread_exit(args));
-    old_GLFWwindowclosecallback = glfwSetWindowCloseCallback(main_window.window, windowclosefun);
-    old_framebuffersizecallback = glfwSetFramebufferSizeCallback(main_window.window, framebuffersizefun);
-    old_keycallback = glfwSetKeyCallback(main_window.window, keyfun);
-    old_cursorposcallback = glfwSetCursorPosCallback(main_window.window, cursorposfun);
-
-    if (glfwRawMouseMotionSupported())
-        glfwSetInputMode(main_window.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-
-    CHECK(texture_unit_freelist_alloc(), pthread_exit(args));
-    CHECK(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT), pthread_exit(args));
-    CHECK(nonstd_opengl_ubo_bindingpoints_alloc(), pthread_exit(args));
-
-    // start imgui
-    CHECK(imgui_init(&gui, main_window.window), pthread_exit(args));
-
+    struct timespec last_time;
+    struct timespec this_time;
     shader_t shader;
-    memset(&shader, 0, sizeof(shader_t));
-    CHECK(shader_init(&shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), pthread_exit(args));
-
-    memset(&camera, 0, sizeof(camera_t));
     vec3 camera_pos = {0.0f, 0.5f, 5.0f};
     vec3 world_up = {0.0f, 1.0f, 0.0f};
-    CHECK(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), pthread_exit(args));
-
     int numModels = 1;
     model_t models[1];
-    memset(models, 0, sizeof(models));
 
-    CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), pthread_exit(args));
-    // CHECK(model_alloc(&(models[1]), &shader, "./resources/objects/rock/", "rock.obj", 20), pthread_exit(args));
+    // INIT
+    {
+        CHECK(get_current_state(&current_state), pthread_exit(args));
+        memset(inputs, GLFW_RELEASE, sizeof(inputs));
 
-    current_state = RUN;
-    CHECK(set_current_state(&current_state), pthread_exit(args));
+        // tripplebuffer_t *tripplebuffer = (tripplebuffer_t *)args;
 
+        CHECK(window_init(&main_window, 1920, 1080, "MainWindow", 0.3f, 0.3f, 0.3f, 1.0f), pthread_exit(args));
+        old_GLFWwindowclosecallback = glfwSetWindowCloseCallback(main_window.window, windowclosefun);
+        old_framebuffersizecallback = glfwSetFramebufferSizeCallback(main_window.window, framebuffersizefun);
+        old_keycallback = glfwSetKeyCallback(main_window.window, keyfun);
+        old_cursorposcallback = glfwSetCursorPosCallback(main_window.window, cursorposfun);
+
+        if (glfwRawMouseMotionSupported())
+            glfwSetInputMode(main_window.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+
+        CHECK(texture_unit_freelist_alloc(), pthread_exit(args));
+        CHECK(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT), pthread_exit(args));
+        CHECK(nonstd_opengl_ubo_bindingpoints_alloc(), pthread_exit(args));
+
+        // start imgui
+        CHECK(imgui_init(&gui, main_window.window), pthread_exit(args));
+
+        memset(&shader, 0, sizeof(shader_t));
+        CHECK(shader_init(&shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), pthread_exit(args));
+
+        memset(&camera, 0, sizeof(camera_t));
+        CHECK(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), pthread_exit(args));
+
+        memset(models, 0, sizeof(models));
+
+        CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), pthread_exit(args));
+        // CHECK(model_alloc(&(models[1]), &shader, "./resources/objects/rock/", "rock.obj", 20), pthread_exit(args));
+
+        current_state = RUN;
+        CHECK(set_current_state(&current_state), pthread_exit(args));
+    }
+
+    // RUN
+    clock_gettime(CLOCK_MONOTONIC, &last_time);
     while (current_state != STOP && !gui.options.file_options.should_close)
     {
-        clock_gettime(CLOCK_MONOTONIC, &start_time);
         glfwPollEvents();
+
+        clock_gettime(CLOCK_MONOTONIC, &this_time);
+        double deltaTime = (double)(this_time.tv_sec - last_time.tv_sec) + ((double)(this_time.tv_nsec - last_time.tv_nsec) * 1.0E-9);
+        last_time = this_time;
+
+        update_camera_pos(deltaTime, inputs);
 
         camera_update_view_projection(&camera);
 
@@ -92,17 +137,12 @@ void *RenderThread(void *args)
         {
             CHECK(model_draw(&models[i]), pthread_exit(args));
         }
-        clock_gettime(CLOCK_MONOTONIC, &end_time);
 
         // guidraw
         CHECK(imgui_draw(&gui, 1, &camera, numModels, models), pthread_exit(args));
 
         // swap
         window_swap(&main_window);
-
-        // double deltaTime = (double)(end_time.tv_sec - start_time.tv_sec) + ((double)(end_time.tv_nsec - start_time.tv_nsec) * 1.0E-9);
-        // fprintf(stderr, "Start: %lu %lu\t End: %lu %lu\n", start_time.tv_sec, start_time.tv_nsec, end_time.tv_sec, end_time.tv_nsec);
-        // fprintf(stderr, "DT: %.3f\tFPS: %.3f\n", deltaTime, 1.0 / deltaTime);
 
         CHECK(get_current_state(&current_state), pthread_exit(args));
     }
@@ -171,25 +211,22 @@ void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods)
 #endif
     if (!imgui_capture_key())
     {
-        switch (key)
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         {
-        case GLFW_KEY_ESCAPE:
-            if (action == GLFW_PRESS)
+            gui.paused = !gui.paused;
+            if (gui.paused)
             {
-                gui.paused = !gui.paused;
-                if (gui.paused)
-                {
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                }
-                else
-                {
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                    glfwGetCursorPos(window, &lastX, &lastY);
-                }
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
-            break;
-        default:
-            break;
+            else
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                glfwGetCursorPos(window, &lastX, &lastY);
+            }
+        }
+        if (!gui.paused && action != GLFW_REPEAT)
+        {
+            inputs[key] = action;
         }
     }
     if (old_keycallback != NULL)
@@ -241,4 +278,22 @@ void cursorposfun(GLFWwindow *window, double xpos, double ypos)
 #ifdef CONTEXT_SWITCHING
     glfwMakeContextCurrent(oldContext);
 #endif
+}
+
+void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1])
+{
+    vec3 move;
+    mat3 view;
+    for (int dir = 0; dir < NUM_MOVEMENT_DIRECTIONS; dir++)
+    {
+        if(inputs[imputMovementMap[dir]] == GLFW_PRESS)
+        {
+            glm_vec3_copy(vecMovementMap[dir], move);
+            glm_vec3_scale(move, dt, move);
+            glm_mat4_pick3(camera.mView, view);
+            glm_mat3_inv(view, view);
+            glm_mat3_mulv(view, move, move);
+            glm_vec3_add(move, camera.mPosition, camera.mPosition);
+        }
+    }
 }
