@@ -14,3 +14,6 @@
 [submodule "external/nonstd_imgui"]
 	path = external/nonstd_imgui
 	url = https://github.com/QuinMcCl/nonstd_imgui.git
+[submodule "external/glew"]
+	path = external/glew
+	url = https://github.com/nigels-com/glew.git

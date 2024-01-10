@@ -1,7 +1,7 @@
 LIB_DIR = $(PWD)/external
 DEPS = nonstd nonstd_glfw_opengl nonstd_imgui
-LIB_DIRS =     $(foreach d, $(DEPS), $(LIB_DIR)/$d)
-LIB_INCLUDES = $(foreach d, $(DEPS), $(LIB_DIR)/$d/include)
+LIB_DIRS =     $(foreach d, $(DEPS), $(LIB_DIR)/$d) $(LIB_DIR)/glew 
+LIB_INCLUDES = $(foreach d, $(LIB_DIRS), $d/include)
 
 LIBSCLEAN=$(addsuffix clean,$(LIB_DIRS))
 LIBSfCLEAN=$(addsuffix fclean,$(LIB_DIRS))
@@ -18,11 +18,11 @@ EXE = $(BIN_DIR)/$(EXE_NAME)
 SRC = $(wildcard $(SRC_DIR)/*.c )
 OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-
+export PYTHON ?= python3
 export CPPFLAGS = -Iinclude -MMD -MP -Ofast -DERROR_CHECKING
 CFLAGS   = -Wall -Wextra -Werror -g
-LDFLAGS  = $(foreach d, $(LIB_DIRS), -L $d/bin)
-LDLIBS   = $(foreach d, $(DEPS), -l$d) -lpthread -lGL -lglfw -lGLEW -lm
+LDFLAGS  = $(foreach d, $(LIB_DIRS), -L $d/lib)
+LDLIBS   = $(foreach d, $(DEPS), -l$d) -lpthread -lGL -lGLEW -lglfw -lm
 INCLUDES = $(foreach d, $(LIB_INCLUDES), -I$d)
 
 .PHONY: all clean  fclean re

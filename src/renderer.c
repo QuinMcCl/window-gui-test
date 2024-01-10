@@ -208,7 +208,7 @@ void cursorposfun(GLFWwindow *window, double xpos, double ypos)
 #endif
     if (!gui.paused)
     {
-        fprintf(stderr, "%f, %f\n", xpos, ypos);
+        // fprintf(stderr, "%f, %f\n", xpos, ypos);
         float xoffset = xpos - lastX;
         float yoffset = -ypos + lastY; // reversed since y-coordinates go from bottom to top
 
