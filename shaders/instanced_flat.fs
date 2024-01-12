@@ -7,6 +7,9 @@ in vec2 TexCoord;
 struct Material_s
 {
     sampler2D Diffuse[8];
+    sampler2D Specular[8];
+    sampler2D Emissive[8];
+    sampler2D Opacity[8];
 };
 
 // texture samplers
