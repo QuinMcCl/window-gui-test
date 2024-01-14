@@ -17,3 +17,6 @@
 [submodule "external/glew"]
 	path = external/glew
 	url = https://github.com/nigels-com/glew.git
+[submodule "external/nonstd_opengl_map"]
+	path = external/nonstd_opengl_map
+	url = https://github.com/QuinMcCl/nonstd_opengl_map.git
