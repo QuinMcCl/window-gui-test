@@ -100,15 +100,19 @@ void *RenderThread(void *args)
 
         memset(&camera, 0, sizeof(camera_t));
         CHECK(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), pthread_exit(args));
+        CHECK(shader_bindBuffer(&shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint), pthread_exit(args));
+        CHECK(shader_bindBuffer(&shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint), pthread_exit(args));
 
         memset(models, 0, sizeof(models));
 
+        // CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), pthread_exit(args));
         CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), pthread_exit(args));
-        // CHECK(model_alloc(&(models[1]), &shader, "./resources/objects/rock/", "rock.obj", 20), pthread_exit(args));
 
         current_state = RUN;
         CHECK(set_current_state(&current_state), pthread_exit(args));
     }
+
+    mat4 transform = GLM_MAT4_IDENTITY_INIT;
 
     // RUN
     clock_gettime(CLOCK_MONOTONIC, &last_time);
@@ -119,6 +123,8 @@ void *RenderThread(void *args)
         clock_gettime(CLOCK_MONOTONIC, &this_time);
         double deltaTime = (double)(this_time.tv_sec - last_time.tv_sec) + ((double)(this_time.tv_nsec - last_time.tv_nsec) * 1.0E-9);
         last_time = this_time;
+
+        glm_rotate(transform, deltaTime * (1.0 / 5.0), vecMovementMap[UP]);
 
         update_camera_pos(deltaTime, inputs);
 
@@ -135,7 +141,7 @@ void *RenderThread(void *args)
 
         for (int i = 0; i < numModels; i++)
         {
-            CHECK(model_draw(&models[i]), pthread_exit(args));
+            CHECK(model_draw(&models[i], transform), pthread_exit(args));
         }
 
         // guidraw
@@ -286,7 +292,7 @@ void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1])
     mat3 view;
     for (int dir = 0; dir < NUM_MOVEMENT_DIRECTIONS; dir++)
     {
-        if(inputs[imputMovementMap[dir]] == GLFW_PRESS)
+        if (inputs[imputMovementMap[dir]] == GLFW_PRESS)
         {
             glm_vec3_copy(vecMovementMap[dir], move);
             glm_vec3_scale(move, dt, move);

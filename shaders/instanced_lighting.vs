@@ -19,12 +19,12 @@ layout(std140) uniform uboViewProjection
 
 void main()
 {
-    vec4 FragPos4 = model[gl_InstanceID] * vec4(aPosition, 1.0);
+    vec4 FragPos4 = model[gl_InstanceID] * vec4(aPosition, 1.0)
 
     FragPos = vec3(FragPos4);
-    Normal = mat3(transpose(inverse(model[gl_InstanceID]))) * aNormal;  
+    Normal = mat3(transpose(inverse(model))) * aNormal;  
 	TexCoord = vec2(aTexCoord0.x, aTexCoord0.y);
-
+    
     gl_Position = projection * view * FragPos4;
     
 }

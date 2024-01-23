@@ -20,7 +20,7 @@ OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 export GLEW_NO_GLU = -DGLEW_NO_GLU
 export PYTHON ?= python3
-export CPPFLAGS = -Iinclude -MMD -MP -Ofast -DERROR_CHECKING -DGLEW_NO_GLU
+export CPPFLAGS = -Iinclude -MMD -MP -DERROR_CHECKING -DGLEW_NO_GLU
 CFLAGS   = -Wall -Wextra -Werror -g
 LDFLAGS  = $(foreach d, $(LIB_DIRS), -L $d/lib)
 LDLIBS   = $(foreach d, $(DEPS), -l$d) -lpthread -lGL -l:libGLEW.a -lglfw -lm

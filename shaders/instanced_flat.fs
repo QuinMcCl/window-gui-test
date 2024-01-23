@@ -2,6 +2,8 @@
 out vec4 FragColor;
 
 in vec2 TexCoord;
+in vec3 FragPos;
+in vec3 Normal;
 
 //structs
 struct Material_s
@@ -12,8 +14,12 @@ struct Material_s
     sampler2D Opacity[8];
 };
 
-// texture samplers
 uniform Material_s Material;
+
+layout(std140) uniform uboViewPosition
+{
+	vec3 viewPos;
+};
 
 void main()
 {
