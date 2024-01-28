@@ -9,35 +9,64 @@
 #include <nonstd.h>
 
 #include "renderer.h"
-
+typedef struct engine_args_s engine_args_t;
+struct engine_args_s
+{
+    task_queue_t * ptr_tq;
+};
 // void *backgroundThread(void *args);
 
 int main()
 {
-    program_state_t current_state = INIT;
-    CHECK(set_current_state(&current_state), return retval);
-
-
     // arraylist_test();
     // hashmap_test();
     // tripplebuffer_tests();
+    // async_test();
 
-    // tripplebuffer_t window_test_tripplebuffer;
-    // memset(&window_test_tripplebuffer, 0, sizeof(tripplebuffer_t));
+#define MAX_CONCURRENT_TASKS 1024UL
+#define MAX_THREADS 8UL
+
+    async_task_t task_buffer[MAX_CONCURRENT_TASKS] = {0};
+    pthread_t threads[MAX_THREADS] = {0};
+    task_queue_t tq = {0};
+    task_queue_init(&tq, sizeof(task_buffer), task_buffer, NULL, NULL, sizeof(threads), threads, NULL, NULL, NULL);
+
+    // tripplebuffer_t window_test_tripplebuffer = {0};
     // tripplebuffer_alloc(&window_test_tripplebuffer, 1, sizeof(double));
 
-    // pthread_t backThread;
-    // pthread_create(&backThread, NULL, backgroundThread, &window_test_tripplebuffer);
+    async_task_t task = {0};
+    render_args_t render_args = {.ptr_tq = &tq};
+    engine_args_t engine_args = {.ptr_tq = &tq};
 
-    pthread_t frontThread;
-    pthread_create(&frontThread, NULL, RenderThread, NULL);
-    // RenderThread(NULL);
+    program_state_t current_state = INIT;
+    CHECK(set_current_state(current_state), return retval);
 
-    // pthread_join(backThread, NULL);
-    pthread_join(frontThread, NULL);
 
+    // task.func = backgroundThread;
+    // task.funcName = "backgroundThread";
+    // task.args = &(engine_args);
+
+    // while (tq.queue.push(&(tq.queue), sizeof(task), &task))
+    // {
+    //     fprintf(stdout, "task queue full\n");
+    // }
+    // tq.awake(&tq);
+
+    task.func = RenderThread;
+    task.funcName = "RenderThread";
+    task.args = &(render_args);
+
+    while (tq.queue.push(&(tq.queue), sizeof(task), &task))
+    {
+        fprintf(stdout, "task queue full\n");
+    }
+    tq.awake(&tq);
+
+
+    CHECK(wait_until_state(STOP), return retval);
     // tripplebuffer_free(&window_test_tripplebuffer);
 
+    // TODO kill task queue
     return 0;
 }
 
@@ -78,5 +107,3 @@ int main()
 //     }
 //     pthread_exit(NULL);
 // }
-
-

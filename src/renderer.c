@@ -62,8 +62,11 @@ void cursorposfun(GLFWwindow *window, double xpos, double ypos);
 
 void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1]);
 
-void *RenderThread(void *args)
+void RenderThread(void *args)
 {
+    THROW_ERR(args == NULL, "NULL RENDER ARGS", return);
+    render_args_t *r_args = args;
+
     struct timespec last_time;
     struct timespec this_time;
     shader_t shader;
@@ -74,12 +77,12 @@ void *RenderThread(void *args)
 
     // INIT
     {
-        CHECK(get_current_state(&current_state), pthread_exit(args));
+        CHECK(get_current_state(&current_state), return);
         memset(inputs, GLFW_RELEASE, sizeof(inputs));
 
         // tripplebuffer_t *tripplebuffer = (tripplebuffer_t *)args;
 
-        CHECK(window_init(&main_window, 1920, 1080, "MainWindow", 0.3f, 0.3f, 0.3f, 1.0f), pthread_exit(args));
+        CHECK(window_init(&main_window, 1920, 1080, "MainWindow", 0.3f, 0.3f, 0.3f, 1.0f), return);
         old_GLFWwindowclosecallback = glfwSetWindowCloseCallback(main_window.window, windowclosefun);
         old_framebuffersizecallback = glfwSetFramebufferSizeCallback(main_window.window, framebuffersizefun);
         old_keycallback = glfwSetKeyCallback(main_window.window, keyfun);
@@ -88,28 +91,28 @@ void *RenderThread(void *args)
         if (glfwRawMouseMotionSupported())
             glfwSetInputMode(main_window.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
-        CHECK(texture_unit_freelist_alloc(), pthread_exit(args));
-        CHECK(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT), pthread_exit(args));
-        CHECK(nonstd_opengl_ubo_bindingpoints_alloc(), pthread_exit(args));
+        CHECK(texture_unit_freelist_alloc(), return);
+        CHECK(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT), return);
+        CHECK(nonstd_opengl_ubo_bindingpoints_alloc(), return);
 
         // start imgui
-        CHECK(imgui_init(&gui, main_window.window), pthread_exit(args));
+        CHECK(imgui_init(&gui, main_window.window), return);
 
         memset(&shader, 0, sizeof(shader_t));
-        CHECK(shader_init(&shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), pthread_exit(args));
+        CHECK(shader_init(&shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), return);
 
         memset(&camera, 0, sizeof(camera_t));
-        CHECK(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), pthread_exit(args));
-        CHECK(shader_bindBuffer(&shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint), pthread_exit(args));
-        CHECK(shader_bindBuffer(&shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint), pthread_exit(args));
+        CHECK(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), return);
+        CHECK(shader_bindBuffer(&shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint), return);
+        CHECK(shader_bindBuffer(&shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint), return);
 
         memset(models, 0, sizeof(models));
 
-        // CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), pthread_exit(args));
-        CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), pthread_exit(args));
+        // CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), return);
+        CHECK(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), return);
 
         current_state = RUN;
-        CHECK(set_current_state(&current_state), pthread_exit(args));
+        CHECK(set_current_state(current_state), return);
     }
 
     mat4 transform = GLM_MAT4_IDENTITY_INIT;
@@ -141,36 +144,36 @@ void *RenderThread(void *args)
 
         for (int i = 0; i < numModels; i++)
         {
-            CHECK(model_draw(&models[i], transform), pthread_exit(args));
+            CHECK(model_draw(&models[i], transform), return);
         }
 
         // guidraw
-        CHECK(imgui_draw(&gui, 1, &camera, numModels, models), pthread_exit(args));
+        CHECK(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models), return);
 
         // swap
         window_swap(&main_window);
 
-        CHECK(get_current_state(&current_state), pthread_exit(args));
+        CHECK(get_current_state(&current_state), return);
     }
 
     current_state = STOP;
-    CHECK(set_current_state(&current_state), pthread_exit(args));
+    CHECK(set_current_state(current_state), return);
 
     window_cleanup(&main_window);
 
-    CHECK(camera_free(&camera), pthread_exit(args));
+    CHECK(camera_free(&camera), return);
     for (int i = 0; i < numModels; i++)
     {
-        CHECK(model_free(&(models[i])), pthread_exit(args));
+        CHECK(model_free(&(models[i])), return);
     }
-    CHECK(shader_free(&shader), pthread_exit(args));
+    CHECK(shader_free(&shader), return);
 
-    CHECK(nonstd_opengl_ubo_bindingpoints_free(), pthread_exit(args));
-    CHECK(loaded_textures_free(), pthread_exit(args));
-    CHECK(texture_unit_freelist_free(), pthread_exit(args));
+    CHECK(nonstd_opengl_ubo_bindingpoints_free(), return);
+    CHECK(loaded_textures_free(), return);
+    CHECK(texture_unit_freelist_free(), return);
 
     glfwTerminate();
-    pthread_exit(args);
+    return;
 }
 
 void windowclosefun(GLFWwindow *window)
