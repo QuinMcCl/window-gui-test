@@ -12,7 +12,7 @@
 typedef struct engine_args_s engine_args_t;
 struct engine_args_s
 {
-    task_queue_t * ptr_tq;
+    task_queue_t *ptr_tq;
 };
 // void *backgroundThread(void *args);
 
@@ -29,18 +29,17 @@ int main()
     async_task_t task_buffer[MAX_CONCURRENT_TASKS] = {0};
     pthread_t threads[MAX_THREADS] = {0};
     task_queue_t tq = {0};
-    task_queue_init(&tq, sizeof(task_buffer), task_buffer, NULL, NULL, sizeof(threads), threads, NULL, NULL, NULL);
+    task_queue_init(&tq, sizeof(task_buffer), task_buffer, NULL, NULL, sizeof(threads), threads, NULL);
 
     // tripplebuffer_t window_test_tripplebuffer = {0};
     // tripplebuffer_alloc(&window_test_tripplebuffer, 1, sizeof(double));
 
     async_task_t task = {0};
     render_args_t render_args = {.ptr_tq = &tq};
-    engine_args_t engine_args = {.ptr_tq = &tq};
+    // engine_args_t engine_args = {.ptr_tq = &tq};
 
     program_state_t current_state = INIT;
     CHECK(set_current_state(current_state), return retval);
-
 
     // task.func = backgroundThread;
     // task.funcName = "backgroundThread";
@@ -48,9 +47,12 @@ int main()
 
     // while (tq.queue.push(&(tq.queue), sizeof(task), &task))
     // {
-    //     fprintf(stdout, "task queue full\n");
+    //     pthread_mutex_lock(&(tq.queue.lock_queue));
+    //     fprintf(stdout, "task queue full %lu / %lu\n", tq.queue.mNumItems, tq.queue.mMaxItems);
+    //     while (tq.queue.mNumItems >= tq.queue.mMaxItems)
+    //         pthread_cond_wait(&(tq.queue.size_cond), &(tq.queue.lock_queue));
+    //     pthread_mutex_unlock(&(tq.queue.lock_queue));
     // }
-    // tq.awake(&tq);
 
     task.func = RenderThread;
     task.funcName = "RenderThread";
@@ -58,10 +60,12 @@ int main()
 
     while (tq.queue.push(&(tq.queue), sizeof(task), &task))
     {
-        fprintf(stdout, "task queue full\n");
+        pthread_mutex_lock(&(tq.queue.lock_queue));
+        fprintf(stdout, "task queue full %lu / %lu\n", tq.queue.mNumItems, tq.queue.mMaxItems);
+        while (tq.queue.mNumItems >= tq.queue.mMaxItems)
+            pthread_cond_wait(&(tq.queue.size_cond), &(tq.queue.lock_queue));
+        pthread_mutex_unlock(&(tq.queue.lock_queue));
     }
-    tq.awake(&tq);
-
 
     CHECK(wait_until_state(STOP), return retval);
     // tripplebuffer_free(&window_test_tripplebuffer);

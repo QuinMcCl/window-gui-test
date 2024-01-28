@@ -16,7 +16,7 @@ nonstd_imgui_t gui;
 camera_t camera;
 program_state_t current_state = INVALID_STATE;
 
-int inputs[GLFW_KEY_LAST + 1];
+int inputs[GLFW_KEY_LAST + 1] = {GLFW_RELEASE};
 
 typedef enum movement_directions_e
 {
@@ -77,9 +77,6 @@ void RenderThread(void *args)
 
     // INIT
     {
-        CHECK(get_current_state(&current_state), return);
-        memset(inputs, GLFW_RELEASE, sizeof(inputs));
-
         // tripplebuffer_t *tripplebuffer = (tripplebuffer_t *)args;
 
         CHECK(window_init(&main_window, 1920, 1080, "MainWindow", 0.3f, 0.3f, 0.3f, 1.0f), return);
