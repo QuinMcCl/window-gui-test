@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <math.h>
 #include <unistd.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -18,10 +20,10 @@ struct engine_args_s
 
 int main()
 {
-    // arraylist_test();
-    // hashmap_test();
-    // tripplebuffer_tests();
-    // async_test();
+    // CHECK_ERR_ERR(arraylist_test(), strerror(errno), return errno);
+    // CHECK_ERR_ERR(hashmap_test(), strerror(errno), return errno);
+    // CHECK_ERR_ERR(swapchain_tests(), strerror(errno), return errno);
+    // CHECK_ERR_ERR(async_test(), strerror(errno), return errno);
 
 #define MAX_CONCURRENT_TASKS 1024UL
 #define MAX_THREADS 8UL
@@ -29,48 +31,30 @@ int main()
     async_task_t task_buffer[MAX_CONCURRENT_TASKS] = {0};
     pthread_t threads[MAX_THREADS] = {0};
     task_queue_t tq = {0};
-    task_queue_init(&tq, sizeof(task_buffer), task_buffer, NULL, NULL, sizeof(threads), threads, NULL);
-
-    // tripplebuffer_t window_test_tripplebuffer = {0};
-    // tripplebuffer_alloc(&window_test_tripplebuffer, 1, sizeof(double));
-
     async_task_t task = {0};
     render_args_t render_args = {.ptr_tq = &tq};
     // engine_args_t engine_args = {.ptr_tq = &tq};
+    // tripplebuffer_t window_test_tripplebuffer = {0};
+    // tripplebuffer_alloc(&window_test_tripplebuffer, 1, sizeof(double));
 
-    program_state_t current_state = INIT;
-    CHECK(set_current_state(current_state), return retval);
+    program_state_t current_state;
+    current_state = INIT;
+    CHECK_ERR(set_current_state(current_state), strerror(errno), return errno);
+
+    CHECK_ERR(task_queue_init(&tq, sizeof(task_buffer), task_buffer, NULL, NULL, MAX_THREADS, threads, NULL), strerror(errno), return errno);
 
     // task.func = backgroundThread;
     // task.funcName = "backgroundThread";
     // task.args = &(engine_args);
-
-    // while (tq.queue.push(&(tq.queue), sizeof(task), &task))
-    // {
-    //     pthread_mutex_lock(&(tq.queue.lock_queue));
-    //     fprintf(stdout, "task queue full %lu / %lu\n", tq.queue.mNumItems, tq.queue.mMaxItems);
-    //     while (tq.queue.mNumItems >= tq.queue.mMaxItems)
-    //         pthread_cond_wait(&(tq.queue.size_cond), &(tq.queue.lock_queue));
-    //     pthread_mutex_unlock(&(tq.queue.lock_queue));
-    // }
+    // QUEUE_PUSH(tq.queue, task, 1);
 
     task.func = RenderThread;
     task.funcName = "RenderThread";
     task.args = &(render_args);
 
-    while (tq.queue.push(&(tq.queue), sizeof(task), &task))
-    {
-        pthread_mutex_lock(&(tq.queue.lock_queue));
-        fprintf(stdout, "task queue full %lu / %lu\n", tq.queue.mNumItems, tq.queue.mMaxItems);
-        while (tq.queue.mNumItems >= tq.queue.mMaxItems)
-            pthread_cond_wait(&(tq.queue.size_cond), &(tq.queue.lock_queue));
-        pthread_mutex_unlock(&(tq.queue.lock_queue));
-    }
+    QUEUE_PUSH(tq.queue, task, 1);
 
-    CHECK(wait_until_state(STOP), return retval);
-    // tripplebuffer_free(&window_test_tripplebuffer);
-
-    // TODO kill task queue
+    CHECK_ERR(wait_until_state(STOP), strerror(errno), return errno);
     return 0;
 }
 

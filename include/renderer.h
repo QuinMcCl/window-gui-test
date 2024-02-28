@@ -6,13 +6,13 @@ extern "C"
 {
 #endif
 
-typedef struct render_args_s render_args_t;
-struct render_args_s
-{
-    task_queue_t * ptr_tq;
-};
+    typedef struct render_args_s render_args_t;
+    struct render_args_s
+    {
+        task_queue_t *ptr_tq;
+    };
 
-void RenderThread(void *args);
+    void RenderThread(void *args);
 
 #ifdef __cplusplus
 } /* extern "C" */
