@@ -14,9 +14,9 @@
 #define MAX_LOADED_TEXTURE_COUNT 800
 
 // nonstd_glfw_window_t tmp_window;
-window_t main_window;
-nonstd_imgui_t gui;
-camera_t camera;
+window_t main_window = {0};
+nonstd_imgui_t gui = {0};
+camera_t camera = {0};
 program_state_t current_state = INVALID_STATE;
 
 int inputs[GLFW_KEY_LAST + 1] = {GLFW_RELEASE};
@@ -70,13 +70,15 @@ void RenderThread(void *args)
     CHECK_ERR(args == NULL ? EINVAL : EXIT_SUCCESS, strerror(errno), return);
     render_args_t *r_args = args;
 
-    struct timespec last_time;
-    struct timespec this_time;
-    shader_t shader;
+    struct timespec last_time = {0};
+    struct timespec this_time = {0};
+    shader_t shader = {0};
     vec3 camera_pos = {0.0f, 0.5f, 5.0f};
     vec3 world_up = {0.0f, 1.0f, 0.0f};
     int numModels = 1;
-    model_t models[1];
+    model_t models[1] = {0};
+
+    mat4 transform = GLM_MAT4_IDENTITY_INIT;
 
     // INIT
     {
@@ -98,24 +100,18 @@ void RenderThread(void *args)
         // start imgui
         CHECK_ERR(imgui_init(&gui, main_window.window), strerror(errno), return);
 
-        memset(&shader, 0, sizeof(shader_t));
         CHECK_ERR(shader_init(&shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), strerror(errno), return);
 
-        memset(&camera, 0, sizeof(camera_t));
         CHECK_ERR(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), strerror(errno), return);
         CHECK_ERR(shader_bindBuffer(&shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint), strerror(errno), return);
         CHECK_ERR(shader_bindBuffer(&shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint), strerror(errno), return);
 
-        memset(models, 0, sizeof(models));
-
         // CHECK_ERR(model_alloc(&(models[0]), &shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), strerror(errno), return);
-        CHECK_ERR(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), strerror(errno), return);
+        // CHECK_ERR(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), strerror(errno), return);
 
         current_state = RUN;
         CHECK_ERR(set_current_state(current_state), strerror(errno), return);
     }
-
-    mat4 transform = GLM_MAT4_IDENTITY_INIT;
 
     // RUN
     clock_gettime(CLOCK_MONOTONIC, &last_time);
@@ -142,10 +138,10 @@ void RenderThread(void *args)
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
-        for (int i = 0; i < numModels; i++)
-        {
-            CHECK_ERR(model_draw(&models[i], transform), strerror(errno), return);
-        }
+        // for (int i = 0; i < numModels; i++)
+        // {
+        //     CHECK_ERR(model_draw(&models[i], transform), strerror(errno), return);
+        // }
 
         // guidraw
         CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models), strerror(errno), return);
@@ -287,6 +283,13 @@ void cursorposfun(GLFWwindow *window, double xpos, double ypos)
 #ifdef CONTEXT_SWITCHING
     glfwMakeContextCurrent(oldContext);
 #endif
+}
+
+void dropfun(GLFWwindow *window, int count, const char **paths)
+{
+    int i;
+    for (i = 0; i < count; i++)
+        handle_dropped_file(paths[i]);
 }
 
 void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1])
