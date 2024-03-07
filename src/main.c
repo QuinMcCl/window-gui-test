@@ -55,6 +55,7 @@ int main()
     QUEUE_PUSH(tq.queue, task, 1);
 
     CHECK_ERR(wait_until_state(STOP), strerror(errno), return errno);
+    task_queue_close(&tq);
     return 0;
 }
 

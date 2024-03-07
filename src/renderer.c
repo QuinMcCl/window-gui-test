@@ -170,7 +170,7 @@ void RenderThread(void *args)
 
     window_cleanup(&main_window);
 
-    CHECK_ERR(camera_free(&camera), strerror(errno), return);
+    // CHECK_ERR(camera_free(&camera), strerror(errno), return);
     // for (int i = 0; i < numModels; i++)
     // {
     //     CHECK_ERR(model_free(&(models[i])), strerror(errno), return);
@@ -178,8 +178,8 @@ void RenderThread(void *args)
     // CHECK_ERR(shader_free(&shader), strerror(errno), return);
     CHECK_ERR(shader_free(&map_shader), strerror(errno), return);
 
-    CHECK_ERR(nonstd_opengl_ubo_bindingpoints_free(), strerror(errno), return);
     CHECK_ERR(loaded_textures_free(), strerror(errno), return);
+    CHECK_ERR(nonstd_opengl_ubo_bindingpoints_free(), strerror(errno), return);
     CHECK_ERR(texture_unit_freelist_free(), strerror(errno), return);
 
     glfwTerminate();
@@ -308,7 +308,7 @@ void dropfun(GLFWwindow *window, int count, const char **paths)
     assert(window != NULL);
     if (count > 0)
     {
-        fprintf(stderr, "%s", paths[0]);
+        fprintf(stderr, "%s\n", paths[0]);
         MAP_RELOAD(the_map, paths[0]);
     }
     if (old_dropcallback != NULL)
