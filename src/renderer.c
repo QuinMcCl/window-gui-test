@@ -14,28 +14,17 @@
 
 #define MAX_LOADED_TEXTURE_COUNT 800
 
-// nonstd_glfw_window_t tmp_window;
-window_t main_window = {0};
-nonstd_imgui_t gui = {0};
-camera_t camera = {0};
-program_state_t current_state = INVALID_STATE;
-tile_t *loaded_tiles[2] = {0};
-map_t the_map = {0};
+// static nonstd_glfw_window_t tmp_window;
+static window_t main_window = {0};
+static nonstd_imgui_t gui = {0};
+static camera_t camera = {0};
+static program_state_t current_state = INVALID_STATE;
+static tile_t *loaded_tiles[512] = {0};
+static map_t the_map = {0};
 
-int inputs[GLFW_KEY_LAST + 1] = {GLFW_RELEASE};
+static int inputs[GLFW_KEY_LAST + 1] = {GLFW_RELEASE};
 
-typedef enum movement_directions_e
-{
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN,
-    NUM_MOVEMENT_DIRECTIONS
-} movement_directions_t;
-
-int imputMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
+static int imputMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
     GLFW_KEY_W,
     GLFW_KEY_S,
     GLFW_KEY_A,
@@ -44,7 +33,7 @@ int imputMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
     GLFW_KEY_LEFT_CONTROL,
 };
 
-vec3 vecMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
+static vec3 vecMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
     ((vec3){0.0f, 0.0f, -1.0f}),
     ((vec3){0.0f, 0.0f, 1.0f}),
     ((vec3){-1.0f, 0.0f, 0.0f}),
@@ -53,38 +42,43 @@ vec3 vecMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
     ((vec3){0.0f, -1.0f, 0.0f}),
 };
 
-double lastX = 0.0;
-double lastY = 0.0;
+static double lastX = 0.0;
+static double lastY = 0.0;
 
-GLFWwindowclosefun old_GLFWwindowclosecallback;
-GLFWframebuffersizefun old_framebuffersizecallback;
-GLFWkeyfun old_keycallback;
-GLFWcursorposfun old_cursorposcallback;
-GLFWdropfun old_dropcallback;
+static GLFWwindowclosefun old_GLFWwindowclosecallback;
+static GLFWframebuffersizefun old_framebuffersizecallback;
+static GLFWkeyfun old_keycallback;
+static GLFWcursorposfun old_cursorposcallback;
+static GLFWdropfun old_dropcallback;
 
-void windowclosefun(GLFWwindow *window);
-void framebuffersizefun(GLFWwindow *window, int width, int height);
-void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods);
-void cursorposfun(GLFWwindow *window, double xpos, double ypos);
-void dropfun(GLFWwindow *window, int count, const char **paths);
+static void windowclosefun(GLFWwindow *window);
+static void framebuffersizefun(GLFWwindow *window, int width, int height);
+static void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods);
+static void cursorposfun(GLFWwindow *window, double xpos, double ypos);
+static void dropfun(GLFWwindow *window, int count, const char **paths);
 
-void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1]);
+static void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1]);
 
 void RenderThread(void *args)
 {
     CHECK_ERR(args == NULL ? EINVAL : EXIT_SUCCESS, strerror(errno), return);
     render_args_t *r_args = args;
 
-    // struct timespec last_time = {0};
-    // struct timespec this_time = {0};
-    // shader_t shader = {0};
+    struct timespec this_time = {0};
+    struct timespec last_time = {0};
+    shader_t camera_shader = {0};
     shader_t map_shader = {0};
-    // vec3 camera_pos = {0.0f, 0.5f, 5.0f};
-    // vec3 world_up = {0.0f, 1.0f, 0.0f};
-    // int numModels = 1;
-    // model_t models[1] = {0};
+    vec3 camera_pos = {0.0f, 0.5f, 5.0f};
+    vec3 world_up = {0.0f, 1.0f, 0.0f};
+    int numModels = 1;
+    model_t models[1] = {0};
 
-    // mat4 transform = GLM_MAT4_IDENTITY_INIT;
+    mat4 transform = GLM_MAT4_IDENTITY_INIT;
+
+    int retval = 0;
+    double stop_work = 0.0;
+    double time_worked = 0.0;
+    double deltaTime = 0.0;
 
     // INIT
     {
@@ -107,37 +101,39 @@ void RenderThread(void *args)
         // start imgui
         CHECK_ERR(imgui_init(&gui, main_window.window), strerror(errno), return);
 
-        // CHECK_ERR(shader_init(&shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), strerror(errno), return);
+        CHECK_ERR(shader_init(&camera_shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), strerror(errno), return);
         CHECK_ERR(shader_init(&map_shader, "./shaders/tile.vs", "./shaders/tile.fs"), strerror(errno), return);
 
-        // CHECK_ERR(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), strerror(errno), return);
-        // CHECK_ERR(shader_bindBuffer(&shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint), strerror(errno), return);
-        // CHECK_ERR(shader_bindBuffer(&shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint), strerror(errno), return);
+        CHECK_ERR(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), strerror(errno), return);
+        CHECK_ERR(shader_bindBuffer(&camera_shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint), strerror(errno), return);
+        CHECK_ERR(shader_bindBuffer(&camera_shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint), strerror(errno), return);
 
-        // CHECK_ERR(model_alloc(&(models[0]), &shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), strerror(errno), return);
-        // CHECK_ERR(model_alloc(&(models[0]), &shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), strerror(errno), return);
+        // CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), strerror(errno), return);
+        CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), strerror(errno), return);
 
-        init_map(&the_map, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        CHECK_ERR(init_map(&the_map, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL), strerror(errno), return);
 
         current_state = RUN;
         CHECK_ERR(set_current_state(current_state), strerror(errno), return);
     }
 
     // RUN
-    // clock_gettime(CLOCK_MONOTONIC, &last_time);
+    clock_gettime(CLOCK_MONOTONIC, &last_time);
     while (current_state != STOP && !gui.options.file_options.should_close)
     {
+        clock_gettime(CLOCK_MONOTONIC, &this_time);
+        deltaTime = (double)(this_time.tv_sec - last_time.tv_sec) + ((double)(this_time.tv_nsec - last_time.tv_nsec) * 1.0E-9);
+        last_time = this_time;
+        fprintf(stdout, "%.6f\n", 1.0 / deltaTime);
+        stop_work = (double)(this_time.tv_sec) + ((double)(this_time.tv_nsec) * 1.0E-9) + (0.8 / 60.0);
+        time_worked = 0.0;
         glfwPollEvents();
-        MAP_POP_LOADED(the_map);
-        // clock_gettime(CLOCK_MONOTONIC, &this_time);
-        // double deltaTime = (double)(this_time.tv_sec - last_time.tv_sec) + ((double)(this_time.tv_nsec - last_time.tv_nsec) * 1.0E-9);
-        // last_time = this_time;
 
-        // glm_rotate(transform, deltaTime * (1.0 / 5.0), vecMovementMap[UP]);
+        glm_rotate(transform, deltaTime * (1.0 / 5.0), vecMovementMap[UP]);
 
-        // update_camera_pos(deltaTime, inputs);
+        update_camera_pos(deltaTime, inputs);
 
-        // camera_update_view_projection(&camera);
+        camera_update_view_projection(&camera);
 
         window_clear(&main_window);
 
@@ -148,20 +144,28 @@ void RenderThread(void *args)
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
+        for (int i = 0; i < numModels; i++)
+        {
+            CHECK_ERR(model_draw(&models[i], transform), strerror(errno), return);
+        }
+
+        glDepthFunc(GL_LEQUAL);
         MAP_DRAW(the_map);
 
-        // for (int i = 0; i < numModels; i++)
-        // {
-        //     CHECK_ERR(model_draw(&models[i], transform), strerror(errno), return);
-        // }
+        glDepthFunc(GL_LESS);
+        // gui draw
+        CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models), strerror(errno), return);
+        // CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 0, NULL, 0, NULL), strerror(errno), return);
 
-        // guidraw
-        // CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models), strerror(errno), return);
-        CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 0, NULL, 0, NULL), strerror(errno), return);
+        do
+        {
+            retval = MAP_POP_LOADED(the_map);
+            clock_gettime(CLOCK_MONOTONIC, &this_time);
+            time_worked = (double)(this_time.tv_sec) + ((double)(this_time.tv_nsec) * 1.0E-9);
+        } while (!retval && time_worked < stop_work);
 
         // swap
         window_swap(&main_window);
-
         CHECK_ERR(get_current_state(&current_state), strerror(errno), return);
     }
 
@@ -170,12 +174,12 @@ void RenderThread(void *args)
 
     window_cleanup(&main_window);
 
-    // CHECK_ERR(camera_free(&camera), strerror(errno), return);
-    // for (int i = 0; i < numModels; i++)
-    // {
-    //     CHECK_ERR(model_free(&(models[i])), strerror(errno), return);
-    // }
-    // CHECK_ERR(shader_free(&shader), strerror(errno), return);
+    CHECK_ERR(camera_free(&camera), strerror(errno), return);
+    for (int i = 0; i < numModels; i++)
+    {
+        CHECK_ERR(model_free(&(models[i])), strerror(errno), return);
+    }
+    CHECK_ERR(shader_free(&camera_shader), strerror(errno), return);
     CHECK_ERR(shader_free(&map_shader), strerror(errno), return);
 
     CHECK_ERR(loaded_textures_free(), strerror(errno), return);
@@ -186,7 +190,7 @@ void RenderThread(void *args)
     return;
 }
 
-void windowclosefun(GLFWwindow *window)
+static void windowclosefun(GLFWwindow *window)
 {
 #ifdef CONTEXT_SWITCHING
     GLFWwindow *oldContext = glfwGetCurrentContext();
@@ -203,7 +207,7 @@ void windowclosefun(GLFWwindow *window)
 #endif
 }
 
-void framebuffersizefun(GLFWwindow *window, int width, int height)
+static void framebuffersizefun(GLFWwindow *window, int width, int height)
 {
 #ifdef CONTEXT_SWITCHING
     GLFWwindow *oldContext = glfwGetCurrentContext();
@@ -222,7 +226,7 @@ void framebuffersizefun(GLFWwindow *window, int width, int height)
 #endif
 }
 
-void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods)
+static void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
 #ifdef CONTEXT_SWITCHING
     GLFWwindow *oldContext = glfwGetCurrentContext();
@@ -257,7 +261,7 @@ void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods)
 #endif
 }
 
-void cursorposfun(GLFWwindow *window, double xpos, double ypos)
+static void cursorposfun(GLFWwindow *window, double xpos, double ypos)
 {
 #ifdef CONTEXT_SWITCHING
     GLFWwindow *oldContext = glfwGetCurrentContext();
@@ -299,17 +303,17 @@ void cursorposfun(GLFWwindow *window, double xpos, double ypos)
 #endif
 }
 
-void dropfun(GLFWwindow *window, int count, const char **paths)
+static void dropfun(GLFWwindow *window, int count, const char **paths)
 {
 #ifdef CONTEXT_SWITCHING
     GLFWwindow *oldContext = glfwGetCurrentContext();
     glfwMakeContextCurrent(main_window.window);
 #endif
     assert(window != NULL);
-    if (count > 0)
+    for (int i = 0; i < count; i++)
     {
-        fprintf(stderr, "%s\n", paths[0]);
-        MAP_RELOAD(the_map, paths[0]);
+        fprintf(stderr, "%s\n", paths[i]);
+        MAP_RELOAD(the_map, paths[i]);
     }
     if (old_dropcallback != NULL)
     {
@@ -320,7 +324,7 @@ void dropfun(GLFWwindow *window, int count, const char **paths)
 #endif
 }
 
-void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1])
+static void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1])
 {
     vec3 move;
     mat3 view;

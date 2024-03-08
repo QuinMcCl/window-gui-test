@@ -6,6 +6,17 @@ extern "C"
 {
 #endif
 
+    typedef enum movement_directions_e
+    {
+        FORWARD,
+        BACKWARD,
+        LEFT,
+        RIGHT,
+        UP,
+        DOWN,
+        NUM_MOVEMENT_DIRECTIONS
+    } movement_directions_t;
+
     typedef struct render_args_s render_args_t;
     struct render_args_s
     {
