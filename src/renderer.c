@@ -22,7 +22,7 @@ static program_state_t current_state = INVALID_STATE;
 static tile_t *loaded_tiles[NUM_TILES] = {0};
 static tile_t map_tiles[16 * 16] = {0};
 static map_t the_map = {0};
-static int map_tile_index = 0;
+// static int map_tile_index = 0;
 
 static int inputs[GLFW_KEY_LAST + 1] = {GLFW_RELEASE};
 
@@ -51,13 +51,13 @@ static GLFWwindowclosefun old_GLFWwindowclosecallback;
 static GLFWframebuffersizefun old_framebuffersizecallback;
 static GLFWkeyfun old_keycallback;
 static GLFWcursorposfun old_cursorposcallback;
-static GLFWdropfun old_dropcallback;
+// static GLFWdropfun old_dropcallback;
 
 static void windowclosefun(GLFWwindow *window);
 static void framebuffersizefun(GLFWwindow *window, int width, int height);
 static void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods);
 static void cursorposfun(GLFWwindow *window, double xpos, double ypos);
-static void dropfun(GLFWwindow *window, int count, const char **paths);
+// static void dropfun(GLFWwindow *window, int count, const char **paths);
 
 static void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1]);
 
@@ -91,7 +91,7 @@ void RenderThread(void *args)
         old_framebuffersizecallback = glfwSetFramebufferSizeCallback(main_window.window, framebuffersizefun);
         old_keycallback = glfwSetKeyCallback(main_window.window, keyfun);
         old_cursorposcallback = glfwSetCursorPosCallback(main_window.window, cursorposfun);
-        old_dropcallback = glfwSetDropCallback(main_window.window, dropfun);
+        // old_dropcallback = glfwSetDropCallback(main_window.window, dropfun);
 
         if (glfwRawMouseMotionSupported())
             glfwSetInputMode(main_window.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
@@ -113,7 +113,8 @@ void RenderThread(void *args)
         // CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), strerror(errno), return);
         CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), strerror(errno), return);
 
-        CHECK_ERR(init_map(&the_map, NUM_TILES, map_tiles, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL), strerror(errno), return);
+        // TODO FIX?
+        CHECK_ERR(init_map(&the_map, "/home/conductor/usgs/landsatTiles", NUM_TILES, map_tiles, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL), strerror(errno), return);
 
         current_state = RUN;
         CHECK_ERR(set_current_state(current_state), strerror(errno), return);
@@ -305,28 +306,28 @@ static void cursorposfun(GLFWwindow *window, double xpos, double ypos)
 #endif
 }
 
-static void dropfun(GLFWwindow *window, int count, const char **paths)
-{
-#ifdef CONTEXT_SWITCHING
-    GLFWwindow *oldContext = glfwGetCurrentContext();
-    glfwMakeContextCurrent(main_window.window);
-#endif
-    assert(window != NULL);
-    for (int i = 0; i < count; i++)
-    {
-        fprintf(stderr, "%s\n", paths[i]);
-        MAP_RELOAD(the_map, &(the_map.tile_array[map_tile_index]), paths[i]);
-        map_tile_index++;
-        map_tile_index %= NUM_TILES;
-    }
-    if (old_dropcallback != NULL)
-    {
-        old_dropcallback(window, count, paths);
-    }
-#ifdef CONTEXT_SWITCHING
-    glfwMakeContextCurrent(oldContext);
-#endif
-}
+// static void dropfun(GLFWwindow *window, int count, const char **paths)
+// {
+// #ifdef CONTEXT_SWITCHING
+//     GLFWwindow *oldContext = glfwGetCurrentContext();
+//     glfwMakeContextCurrent(main_window.window);
+// #endif
+//     assert(window != NULL);
+//     for (int i = 0; i < count; i++)
+//     {
+//         fprintf(stderr, "%s\n", paths[i]);
+//         MAP_RELOAD(the_map, &(the_map.tile_array[map_tile_index]), paths[i]);
+//         map_tile_index++;
+//         map_tile_index %= NUM_TILES;
+//     }
+//     if (old_dropcallback != NULL)
+//     {
+//         old_dropcallback(window, count, paths);
+//     }
+// #ifdef CONTEXT_SWITCHING
+//     glfwMakeContextCurrent(oldContext);
+// #endif
+// }
 
 static void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1])
 {
