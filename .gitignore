@@ -3,3 +3,5 @@ obj/
 unused/
 .vscode/
 imgui.ini
+callgrind.out.*
+valgrind.out

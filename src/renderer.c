@@ -13,14 +13,16 @@
 #include "renderer.h"
 
 #define MAX_LOADED_TEXTURE_COUNT 800
-
+#define NUM_TILES 16 * 16
 // static nonstd_glfw_window_t tmp_window;
 static window_t main_window = {0};
 static nonstd_imgui_t gui = {0};
 static camera_t camera = {0};
 static program_state_t current_state = INVALID_STATE;
-static tile_t *loaded_tiles[512] = {0};
+static tile_t *loaded_tiles[NUM_TILES] = {0};
+static tile_t map_tiles[16 * 16] = {0};
 static map_t the_map = {0};
+static int map_tile_index = 0;
 
 static int inputs[GLFW_KEY_LAST + 1] = {GLFW_RELEASE};
 
@@ -111,7 +113,7 @@ void RenderThread(void *args)
         // CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), strerror(errno), return);
         CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), strerror(errno), return);
 
-        CHECK_ERR(init_map(&the_map, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL), strerror(errno), return);
+        CHECK_ERR(init_map(&the_map, NUM_TILES, map_tiles, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL), strerror(errno), return);
 
         current_state = RUN;
         CHECK_ERR(set_current_state(current_state), strerror(errno), return);
@@ -124,7 +126,7 @@ void RenderThread(void *args)
         clock_gettime(CLOCK_MONOTONIC, &this_time);
         deltaTime = (double)(this_time.tv_sec - last_time.tv_sec) + ((double)(this_time.tv_nsec - last_time.tv_nsec) * 1.0E-9);
         last_time = this_time;
-        fprintf(stdout, "%.6f\n", 1.0 / deltaTime);
+        // fprintf(stdout, "%.6f\n", 1.0 / deltaTime);
         stop_work = (double)(this_time.tv_sec) + ((double)(this_time.tv_nsec) * 1.0E-9) + (0.8 / 60.0);
         time_worked = 0.0;
         glfwPollEvents();
@@ -313,7 +315,9 @@ static void dropfun(GLFWwindow *window, int count, const char **paths)
     for (int i = 0; i < count; i++)
     {
         fprintf(stderr, "%s\n", paths[i]);
-        MAP_RELOAD(the_map, paths[i]);
+        MAP_RELOAD(the_map, &(the_map.tile_array[map_tile_index]), paths[i]);
+        map_tile_index++;
+        map_tile_index %= NUM_TILES;
     }
     if (old_dropcallback != NULL)
     {
