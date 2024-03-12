@@ -61,9 +61,11 @@ static void cursorposfun(GLFWwindow *window, double xpos, double ypos);
 
 static void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1]);
 
+#define ON_ERROR return;
+
 void RenderThread(void *args)
 {
-    CHECK_ERR(args == NULL ? EINVAL : EXIT_SUCCESS, strerror(errno), return);
+    CHECK_ERR(args == NULL ? EINVAL : EXIT_SUCCESS);
     render_args_t *r_args = args;
 
     struct timespec this_time = {0};
@@ -77,7 +79,6 @@ void RenderThread(void *args)
 
     mat4 transform = GLM_MAT4_IDENTITY_INIT;
 
-    int retval = 0;
     double stop_work = 0.0;
     double time_worked = 0.0;
     double deltaTime = 0.0;
@@ -86,7 +87,7 @@ void RenderThread(void *args)
     {
         // tripplebuffer_t *tripplebuffer = (tripplebuffer_t *)args;
 
-        CHECK_ERR(window_init(&main_window, 1920, 1080, "MainWindow", 0.3f, 0.3f, 0.3f, 1.0f), strerror(errno), return);
+        CHECK_ERR(window_init(&main_window, 1920, 1080, "MainWindow", 0.3f, 0.3f, 0.3f, 1.0f));
         old_GLFWwindowclosecallback = glfwSetWindowCloseCallback(main_window.window, windowclosefun);
         old_framebuffersizecallback = glfwSetFramebufferSizeCallback(main_window.window, framebuffersizefun);
         old_keycallback = glfwSetKeyCallback(main_window.window, keyfun);
@@ -96,28 +97,28 @@ void RenderThread(void *args)
         if (glfwRawMouseMotionSupported())
             glfwSetInputMode(main_window.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
-        CHECK_ERR(texture_unit_freelist_alloc(), strerror(errno), return);
-        CHECK_ERR(nonstd_opengl_ubo_bindingpoints_alloc(), strerror(errno), return);
-        CHECK_ERR(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT), strerror(errno), return);
+        CHECK_ERR(texture_unit_freelist_alloc());
+        CHECK_ERR(nonstd_opengl_ubo_bindingpoints_alloc());
+        CHECK_ERR(loaded_textures_alloc(MAX_LOADED_TEXTURE_COUNT));
 
         // start imgui
-        CHECK_ERR(imgui_init(&gui, main_window.window), strerror(errno), return);
+        CHECK_ERR(imgui_init(&gui, main_window.window));
 
-        CHECK_ERR(shader_init(&camera_shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"), strerror(errno), return);
-        CHECK_ERR(shader_init(&map_shader, "./shaders/tile.vs", "./shaders/tile.fs"), strerror(errno), return);
+        CHECK_ERR(shader_init(&camera_shader, "./shaders/instanced_flat.vs", "./shaders/instanced_flat.fs"));
+        CHECK_ERR(shader_init(&map_shader, "./shaders/tile.vs", "./shaders/tile.fs"));
 
-        CHECK_ERR(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f), strerror(errno), return);
-        CHECK_ERR(shader_bindBuffer(&camera_shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint), strerror(errno), return);
-        CHECK_ERR(shader_bindBuffer(&camera_shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint), strerror(errno), return);
+        CHECK_ERR(camera_alloc(&camera, camera_pos, world_up, -90.0f, 0.0f, 0.0f, 0.1f, 100.0f, main_window.aspect, 45.0f));
+        CHECK_ERR(shader_bindBuffer(&camera_shader, camera.mViewProjection.name, camera.mViewProjection.bindingPoint));
+        CHECK_ERR(shader_bindBuffer(&camera_shader, camera.mViewPosition.name, camera.mViewPosition.bindingPoint));
 
-        // CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14), strerror(errno), return);
-        CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20), strerror(errno), return);
+        // CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/Bunny/", "bun_zipper.ply", 14));
+        CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20));
 
         // TODO FIX?
-        CHECK_ERR(init_map(&the_map, "/home/conductor/usgs/landsatTiles", NUM_TILES, map_tiles, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL), strerror(errno), return);
+        CHECK_ERR(init_map(&the_map, "/home/conductor/usgs/landsatTiles", NUM_TILES, map_tiles, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
 
         current_state = RUN;
-        CHECK_ERR(set_current_state(current_state), strerror(errno), return);
+        CHECK_ERR(set_current_state(current_state));
     }
 
     // RUN
@@ -149,7 +150,7 @@ void RenderThread(void *args)
 
         for (int i = 0; i < numModels; i++)
         {
-            CHECK_ERR(model_draw(&models[i], transform), strerror(errno), return);
+            CHECK_ERR(model_draw(&models[i], transform));
         }
 
         glDepthFunc(GL_LEQUAL);
@@ -157,37 +158,42 @@ void RenderThread(void *args)
 
         glDepthFunc(GL_LESS);
         // gui draw
-        CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models), strerror(errno), return);
-        // CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 0, NULL, 0, NULL), strerror(errno), return);
+        CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models));
+        // CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 0, NULL, 0, NULL));
 
+        int stop = 0;
         do
         {
-            retval = MAP_POP_LOADED(the_map);
             clock_gettime(CLOCK_MONOTONIC, &this_time);
             time_worked = (double)(this_time.tv_sec) + ((double)(this_time.tv_nsec) * 1.0E-9);
-        } while (!retval && time_worked < stop_work);
+            if (time_worked > stop_work)
+            {
+                break;
+            }
+            CHECK_ERR(MAP_POP_LOADED(the_map, &stop));
+        } while (!stop);
 
         // swap
         window_swap(&main_window);
-        CHECK_ERR(get_current_state(&current_state), strerror(errno), return);
+        CHECK_ERR(get_current_state(&current_state));
     }
 
     current_state = STOP;
-    CHECK_ERR(set_current_state(current_state), strerror(errno), return);
+    CHECK_ERR(set_current_state(current_state));
 
     window_cleanup(&main_window);
 
-    CHECK_ERR(camera_free(&camera), strerror(errno), return);
+    CHECK_ERR(camera_free(&camera));
     for (int i = 0; i < numModels; i++)
     {
-        CHECK_ERR(model_free(&(models[i])), strerror(errno), return);
+        CHECK_ERR(model_free(&(models[i])));
     }
-    CHECK_ERR(shader_free(&camera_shader), strerror(errno), return);
-    CHECK_ERR(shader_free(&map_shader), strerror(errno), return);
+    CHECK_ERR(shader_free(&camera_shader));
+    CHECK_ERR(shader_free(&map_shader));
 
-    CHECK_ERR(loaded_textures_free(), strerror(errno), return);
-    CHECK_ERR(nonstd_opengl_ubo_bindingpoints_free(), strerror(errno), return);
-    CHECK_ERR(texture_unit_freelist_free(), strerror(errno), return);
+    CHECK_ERR(loaded_textures_free());
+    CHECK_ERR(nonstd_opengl_ubo_bindingpoints_free());
+    CHECK_ERR(texture_unit_freelist_free());
 
     glfwTerminate();
     return;
@@ -346,3 +352,5 @@ static void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1])
         }
     }
 }
+
+#undef ON_ERROR

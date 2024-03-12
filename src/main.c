@@ -18,12 +18,13 @@ struct engine_args_s
 };
 // void *backgroundThread(void *args);
 
+#define ON_ERROR return errno;
 int main()
 {
-    // CHECK_ERR_ERR(arraylist_test(), strerror(errno), return errno);
-    // CHECK_ERR_ERR(hashmap_test(), strerror(errno), return errno);
-    // CHECK_ERR_ERR(swapchain_tests(), strerror(errno), return errno);
-    // CHECK_ERR_ERR(async_test(), strerror(errno), return errno);
+    // CHECK_ERR_ERR(arraylist_test());
+    // CHECK_ERR_ERR(hashmap_test());
+    // CHECK_ERR_ERR(swapchain_tests());
+    // CHECK_ERR_ERR(async_test());
 
 #define MAX_CONCURRENT_TASKS 1024UL
 #define MAX_THREADS 8UL
@@ -39,9 +40,9 @@ int main()
 
     program_state_t current_state;
     current_state = INIT;
-    CHECK_ERR(set_current_state(current_state), strerror(errno), return errno);
+    CHECK_ERR(set_current_state(current_state));
 
-    CHECK_ERR(task_queue_init(&tq, sizeof(task_buffer), task_buffer, NULL, NULL, MAX_THREADS, threads, NULL), strerror(errno), return errno);
+    CHECK_ERR(task_queue_init(&tq, sizeof(task_buffer), task_buffer, NULL, NULL, MAX_THREADS, threads, NULL));
 
     // task.func = backgroundThread;
     // task.funcName = "backgroundThread";
@@ -54,7 +55,7 @@ int main()
 
     QUEUE_PUSH(tq.queue, task, 1);
 
-    CHECK_ERR(wait_until_state(STOP), strerror(errno), return errno);
+    CHECK_ERR(wait_until_state(STOP));
     task_queue_close(&tq);
     return 0;
 }
@@ -96,3 +97,5 @@ int main()
 //     }
 //     pthread_exit(NULL);
 // }
+
+#undef ON_ERROR
