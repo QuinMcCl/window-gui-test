@@ -25,6 +25,7 @@ static map_t the_map = {0};
 // static int map_tile_index = 0;
 
 static int inputs[GLFW_KEY_LAST + 1] = {GLFW_RELEASE};
+static int mouseInputs[GLFW_MOUSE_BUTTON_LAST + 1] = {GLFW_RELEASE};
 
 static int imputMovementMap[NUM_MOVEMENT_DIRECTIONS] = {
     GLFW_KEY_W,
@@ -51,12 +52,14 @@ static GLFWwindowclosefun old_GLFWwindowclosecallback;
 static GLFWframebuffersizefun old_framebuffersizecallback;
 static GLFWkeyfun old_keycallback;
 static GLFWcursorposfun old_cursorposcallback;
+static GLFWmousebuttonfun old_mousebuttoncallback;
 // static GLFWdropfun old_dropcallback;
 
 static void windowclosefun(GLFWwindow *window);
 static void framebuffersizefun(GLFWwindow *window, int width, int height);
 static void keyfun(GLFWwindow *window, int key, int scancode, int action, int mods);
 static void cursorposfun(GLFWwindow *window, double xpos, double ypos);
+static void mousebuttonfun(GLFWwindow *window, int button, int action, int mods);
 // static void dropfun(GLFWwindow *window, int count, const char **paths);
 
 static void update_camera_pos(float dt, int inputs[GLFW_KEY_LAST + 1]);
@@ -92,6 +95,7 @@ void RenderThread(void *args)
         old_framebuffersizecallback = glfwSetFramebufferSizeCallback(main_window.window, framebuffersizefun);
         old_keycallback = glfwSetKeyCallback(main_window.window, keyfun);
         old_cursorposcallback = glfwSetCursorPosCallback(main_window.window, cursorposfun);
+        old_mousebuttoncallback = glfwSetMouseButtonCallback(main_window.window, mousebuttonfun);
         // old_dropcallback = glfwSetDropCallback(main_window.window, dropfun);
 
         if (glfwRawMouseMotionSupported())
@@ -115,7 +119,7 @@ void RenderThread(void *args)
         CHECK_ERR(model_alloc(&(models[0]), &camera_shader, "./resources/objects/vampire/", "dancing_vampire.dae", 20));
 
         // TODO FIX?
-        CHECK_ERR(init_map(&the_map, "/home/conductor/usgs/landsatTiles", NUM_TILES, map_tiles, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+        CHECK_ERR(init_map(&the_map, "/home/conductor/usgs/landsatTiles", NUM_TILES, map_tiles, r_args->ptr_tq, sizeof(loaded_tiles), loaded_tiles, &map_shader, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
 
         current_state = RUN;
         CHECK_ERR(set_current_state(current_state));
@@ -158,7 +162,7 @@ void RenderThread(void *args)
 
         glDepthFunc(GL_LESS);
         // gui draw
-        CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models));
+        CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 1, &camera, numModels, models, &the_map));
         // CHECK_ERR(imgui_draw(&gui, r_args->ptr_tq, 0, NULL, 0, NULL));
 
         int stop = 0;
@@ -270,27 +274,36 @@ static void keyfun(GLFWwindow *window, int key, int scancode, int action, int mo
 #endif
 }
 
+static void mousebuttonfun(GLFWwindow *window, int button, int action, int mods)
+{
+    if (!imgui_capture_mouse() && action != GLFW_REPEAT)
+    {
+        mouseInputs[button] = action;
+    }
+
+    if (old_mousebuttoncallback != NULL)
+    {
+        old_mousebuttoncallback(window, button, action, mods);
+    }
+}
+
 static void cursorposfun(GLFWwindow *window, double xpos, double ypos)
 {
 #ifdef CONTEXT_SWITCHING
     GLFWwindow *oldContext = glfwGetCurrentContext();
     glfwMakeContextCurrent(main_window.window);
-#endif
+#endif // fprintf(stderr, "%f, %f\n", xpos, ypos);
+    float xoffset = xpos - lastX;
+    float yoffset = -ypos + lastY; // reversed since y-coordinates go from bottom to top
+
+    lastX = xpos;
+    lastY = ypos;
+
     if (!gui.paused)
     {
-        // fprintf(stderr, "%f, %f\n", xpos, ypos);
-        float xoffset = xpos - lastX;
-        float yoffset = -ypos + lastY; // reversed since y-coordinates go from bottom to top
-
-        lastX = xpos;
-        lastY = ypos;
-
-        xoffset *= camera.mMouseSensitivity;
-        yoffset *= camera.mMouseSensitivity;
-
         // fprintf(stderr, "X:%.5f, Y:%.5f\n", xoffset, yoffset);
-        camera.mYaw += xoffset;
-        camera.mPitch += yoffset;
+        camera.mYaw += xoffset * camera.mMouseSensitivity;
+        camera.mPitch += yoffset * camera.mMouseSensitivity;
 
         // make sure that when pitch is out of bounds, screen doesn't get flipped
         if (camera.mConstrainPitch)
@@ -301,6 +314,12 @@ static void cursorposfun(GLFWwindow *window, double xpos, double ypos)
                 camera.mPitch = -89.0f;
         }
         // glfwSetCursorPos(window, 0, 0);
+    }
+
+    if (!imgui_capture_mouse() && mouseInputs[GLFW_MOUSE_BUTTON_LEFT] == GLFW_PRESS)
+    {
+        // fprintf(stderr, "%f, %f\n", xoffset, yoffset);
+        MAP_MOVE(the_map, xoffset / ((double)main_window.width), yoffset / ((double)main_window.width), 0.0);
     }
 
     if (old_cursorposcallback != NULL)
